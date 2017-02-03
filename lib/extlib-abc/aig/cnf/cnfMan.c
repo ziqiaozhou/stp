@@ -171,9 +171,12 @@ void Cnf_DataWriteIntoFile( Cnf_Dat_t * p, char * pFileName, int fReadable )
     fprintf( pFile, "p cnf %d %d\n", p->nVars, p->nClauses );
     for ( i = 0; i < p->nClauses; i++ )
     {
-        for ( pLit = p->pClauses[i], pStop = p->pClauses[i+1]; pLit < pStop; pLit++ )
+        for ( pLit = p->pClauses[i], pStop = p->pClauses[i+1]; pLit < pStop; pLit++ ){
             fprintf( pFile, "%d ", fReadable? Cnf_Lit2Var2(*pLit) : Cnf_Lit2Var(*pLit) );
+			fflush(pFile);
+		}
         fprintf( pFile, "0\n" );
+			fflush(pFile);
     }
     fprintf( pFile, "\n" );
     fclose( pFile );
