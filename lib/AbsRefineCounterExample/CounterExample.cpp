@@ -25,7 +25,8 @@ THE SOFTWARE.
 #include "stp/AbsRefineCounterExample/AbsRefine_CounterExample.h"
 #include "stp/Printer/printers.h"
 #include "stp/ToSat/AIG/ToSATAIG.h"
-
+#include <iostream>
+#include <fstream>
 const bool debug_counterexample = false;
 
 namespace stp
@@ -51,54 +52,71 @@ void AbsRefine_CounterExample::ConstructCounterExample(
   assert(CounterExampleMap.size() == 0);
 
   CopySolverMap_To_CounterExample();
+  std::ofstream f;
+f.open("name_cnf.txt");
 
   for (ToSATBase::ASTNodeToSATVar::const_iterator it = satVarToSymbol.begin();
-       it != satVarToSymbol.end(); it++)
+			  it != satVarToSymbol.end(); it++)
   {
-    const ASTNode& symbol = it->first;
-    const vector<unsigned>& v = it->second;
+	  const ASTNode& symbol = it->first;
+	  const vector<unsigned>& v = it->second;
 
-    const unsigned int symbolWidth = symbol.GetValueWidth();
-    assert(symbol.GetKind() == SYMBOL);
-    vector<bool> bitVector_array(symbolWidth, false);
+	  const unsigned int symbolWidth = symbol.GetValueWidth();
+	  assert(symbol.GetKind() == SYMBOL);
+	  vector<bool> bitVector_array(symbolWidth, false);
+	  f<<"c ";
+	  symbol.nodeprint(f);
+	  for (size_t index = 0; index < v.size(); index++)
+	  {
+		  const unsigned sat_variable_index = v[index];
+		  cout << "VarDump: ";
+		  symbol.nodeprint(cout);
+		  cout << " bit " << index << " is ";
+		  f<<" "<<sat_variable_index + 1;
+		  if (sat_variable_index == ~((unsigned) 0))
+			cout << "not sent to solver";
+		  else if (newS.modelValue(sat_variable_index) == newS.undef_literal())
+		  {  cout << "SAT var " << (sat_variable_index + 1);
+			  cout << "undef";}
+		  else
+			cout << "SAT var " << (sat_variable_index + 1);
+		  cout << endl;
 
-    for (size_t index = 0; index < v.size(); index++)
-    {
-      const unsigned sat_variable_index = v[index];
+		  if (sat_variable_index == ~((unsigned)0)) // not sent to the sat solver.
+			continue;
 
-      if (sat_variable_index == ~((unsigned)0)) // not sent to the sat solver.
-        continue;
+		  if (newS.modelValue(sat_variable_index) == newS.undef_literal())
+			continue;
 
-      if (newS.modelValue(sat_variable_index) == newS.undef_literal())
-        continue;
+		  // assemble the counterexample here
+		  if (symbol.GetType() == BITVECTOR_TYPE)
+		  {
+			  // Collect the bits of 'symbol' and store in v. Store
+			  // in reverse order.
+			  bitVector_array[(symbolWidth - 1) - index] =
+				  (newS.modelValue(sat_variable_index) == newS.true_literal());
+		  }
+		  else
+		  {
+			  assert(symbol.GetType() == BOOLEAN_TYPE);
+			  if (newS.modelValue(sat_variable_index) == newS.true_literal())
+				CounterExampleMap[symbol] = ASTTrue;
+			  else if (newS.modelValue(sat_variable_index) == newS.false_literal())
+				CounterExampleMap[symbol] = ASTFalse;
+			  else
+				FatalError("never heres.");
+		  }
+	  }
 
-      // assemble the counterexample here
-      if (symbol.GetType() == BITVECTOR_TYPE)
-      {
-        // Collect the bits of 'symbol' and store in v. Store
-        // in reverse order.
-        bitVector_array[(symbolWidth - 1) - index] =
-            (newS.modelValue(sat_variable_index) == newS.true_literal());
-      }
-      else
-      {
-        assert(symbol.GetType() == BOOLEAN_TYPE);
-        if (newS.modelValue(sat_variable_index) == newS.true_literal())
-          CounterExampleMap[symbol] = ASTTrue;
-        else if (newS.modelValue(sat_variable_index) == newS.false_literal())
-          CounterExampleMap[symbol] = ASTFalse;
-        else
-          FatalError("never heres.");
-      }
-    }
-
-    if (symbol.GetType() == BITVECTOR_TYPE)
-    {
-      CounterExampleMap[symbol] =
-          BoolVectoBVConst(&bitVector_array, symbol.GetValueWidth());
-    }
+	  if (symbol.GetType() == BITVECTOR_TYPE)
+	  {
+		  CounterExampleMap[symbol] =
+			  BoolVectoBVConst(&bitVector_array, symbol.GetValueWidth());
+	  }
+	  f<<"\n";
   }
 
+	  f.close();
   for (ArrayTransformer::ArrType::const_iterator
            it = ArrayTransform->arrayToIndexToRead.begin(),
            itend = ArrayTransform->arrayToIndexToRead.end();

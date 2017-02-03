@@ -23,8 +23,19 @@ if(NOT BUILD_SHARED_LIBS)
 endif()
 
 add_executable(rewrite_rule_gen
-    rewrite_rule_gen.cpp
-)
+	rewrite_rule_gen.cpp
+	)
+if (BUILD_STATIC_BIN)
+	set_target_properties(stp PROPERTIES LINK_SEARCH_END_STATIC 1)
+	set_target_properties(stp PROPERTIES LINK_SEARCH_START_STATIC 0)
+endif()
+
+set_target_properties(stp PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+	VERSION "${PROJECT_VERSION}"
+	)
+
+
 target_link_libraries(rewrite_rule_gen
     libstp
 )
