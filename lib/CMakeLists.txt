@@ -18,6 +18,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
+# Enable symbol exports
+add_definitions(-D STP_EXPORTS)
+
 add_subdirectory(Globals)
 add_subdirectory(AST)
 add_subdirectory(AbsRefineCounterExample)
@@ -53,6 +56,7 @@ set(stp_lib_targets
     parser
     printer
     util
+    ${PLATFORM_COMPAT_LIBRARIES}
 )
 
 # Create list of objects and gather list of
@@ -69,32 +73,25 @@ foreach(target ${stp_lib_targets})
     endif()
 endforeach()
 
-add_library(libstp ${stp_lib_objects})
+if (STATICCOMPILE)
+    add_library(libstp STATIC
+        ${stp_lib_objects}
+    )
+else()
+    add_library(libstp SHARED
+        ${stp_lib_objects}
+    )
+endif()
 
-set_target_properties(libstp PROPERTIES
-                        OUTPUT_NAME stp
-                        PUBLIC_HEADER "${stp_public_headers}"
-                        VERSION ${PROJECT_VERSION}
-                        SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-                     )
+# Set the public header so it will be installed
+set_target_properties(libstp
+    PROPERTIES
+    OUTPUT_NAME stp
+    PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/include/stp/c_interface.h"
+    VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+)
 
-# -----------------------------------------------------------------------------
-# Support building both static and dynamic library
-# -----------------------------------------------------------------------------
-# if (BUILD_SHARED_LIBS AND ALSO_BUILD_STATIC_LIB)
-#   add_library(libstp_static STATIC ${stp_lib_objects})
-#
-#   set_target_properties(libstp_static PROPERTIES
-#                           OUTPUT_NAME stp
-#                           VERSION ${PROJECT_VERSION}
-#                        )
-#
-#   install(TARGETS libstp_static
-#               EXPORT ${STP_EXPORT_NAME}
-#               LIBRARY DESTINATION "${CMAKE_INSTALL_PREFIX}/lib"
-#               ARCHIVE DESTINATION "${CMAKE_INSTALL_PREFIX}/lib"
-#          )
-# endif()
 
 # -----------------------------------------------------------------------------
 # On non-windows systems a built static library cannot have another static
@@ -111,7 +108,7 @@ set_target_properties(libstp PROPERTIES
 # -----------------------------------------------------------------------------
 set(libstp_link_libs ${Boost_LIBRARIES} ${MINISAT_LIBRARIES})
 if (USE_CRYPTOMINISAT)
-    if (NOT BUILD_SHARED_LIBS)
+    if (STATICCOMPILE)
       set(libstp_link_libs
         ${libstp_link_libs}
         ${CRYPTOMINISAT5_STATIC_LIBRARIES}
@@ -123,18 +120,14 @@ if (USE_CRYPTOMINISAT)
     endif()
 endif()
 
-target_link_libraries(libstp ${libstp_link_libs})
-
-# Set the public header so it will be installed
-set_target_properties(libstp
-                      PROPERTIES
-                      VERSION ${PROJECT_VERSION}
-                      PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/include/stp/c_interface.h"
-                     )
+target_link_libraries(libstp
+    LINK_PUBLIC ${libstp_link_libs}
+)
 
 install(TARGETS libstp
-            EXPORT ${STP_EXPORT_NAME}
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            PUBLIC_HEADER DESTINATION include/stp
-       )
+    EXPORT ${STP_EXPORT_NAME}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION include/stp
+)

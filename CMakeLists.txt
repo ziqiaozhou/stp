@@ -19,19 +19,13 @@
 # THE SOFTWARE.
 
 project(STP)
-cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
 
 
 if(NOT (CMAKE_MAJOR_VERSION LESS 2))
-    if(POLICY CMP0026)
-        # FIXME: We need to find a proper way to get the LOCATION property of a target
-        # when using CMake >= 3.0
-        cmake_policy(SET CMP0026 OLD) # See cmake --help-policy CMP0026
-    endif()
-
     if(POLICY CMP0048)
         #policy for VERSION in cmake 3.0
-        cmake_policy(SET CMP0048 OLD)
+        cmake_policy(SET CMP0048 NEW)
     endif()
 endif()
 
@@ -39,6 +33,7 @@ endif()
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 set(CMAKE_INSTALL_LIBDIR lib CACHE STRING "Output directory for libraries")
+set(CMAKE_INSTALL_BINDIR bin CACHE STRING "Output directory for executables")
 set(STP_TIMESTAMPS ON CACHE BOOL "Enable build with timestamps")
 
 # -----------------------------------------------------------------------------
@@ -121,20 +116,35 @@ endif()
 # Let the user decide if they want to build shared or static client library.
 # STP will link against this client library
 # -----------------------------------------------------------------------------
-option(BUILD_SHARED_LIBS "Build client library as a shared library" ON)
+option(STATICCOMPILE "Compile static library and executable" OFF)
 
-if (WIN32)
-  # building of shared lib on windows is not done at source level
-  set(BUILD_SHARED_LIBS OFF)
-  message(WARNING "Disabling building of shared library on Windows")
+if (STATICCOMPILE)
+    set(Boost_USE_STATIC_LIBS ON)
+    if (NOT MSVC)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -static ")
+        set(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+
+        # removing -rdynamic that's automatically added
+        foreach (language CXX C)
+            set(VAR_TO_MODIFY "CMAKE_SHARED_LIBRARY_LINK_${language}_FLAGS")
+            string(REGEX REPLACE "(^| )-rdynamic($| )"
+                                 " "
+                                 replacement
+                                 "${${VAR_TO_MODIFY}}")
+            #message("Original (${VAR_TO_MODIFY}) is ${${VAR_TO_MODIFY}} replacement is ${replacement}")
+            set(${VAR_TO_MODIFY} "${replacement}" CACHE STRING "Default flags for ${build_config} configuration" FORCE)
+        endforeach()
+    endif()
+else ()
+    if (APPLE)
+      set(CMAKE_MACOSX_RPATH ON)
+      set(CMAKE_INSTALL_RPATH "@loader_path/../lib")
+      message(STATUS "Using RPATH for dynamic linking")
+    endif()
 endif()
 
-if (BUILD_SHARED_LIBS)
-  set(STP_SHARED_LIBRARY libstp) # Used for exporting target
-else()
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static -Wl,--whole-archive -lpthread -Wl,--no-whole-archive -static ")
-  SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
-  set(STP_STATIC_LIBRARY libstp) # Used for exporting target
+if (MSVC AND NOT STATICCOMPILE)
+    add_definitions(-D STP_SHARED_LIB) # Used for symbol visibilty control
 endif()
 
 # -----------------------------------------------------------------------------
@@ -149,11 +159,6 @@ macro(add_cxx_flag_if_supported flagname)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${flagname}")
   endif()
 endmacro()
-
-if(BUILD_SHARED_LIBS)
-    message(STATUS "Building shared library currently broken due to mix of C++/C code")
-    add_cxx_flag_if_supported("-fPIC")
-endif()
 
 check_cxx_compiler_flag("-std=c++11" HAVE_FLAG_STD_CPP11)
 check_cxx_compiler_flag("-std=gnu++11" HAVE_FLAG_STD_GNUCPP11)
@@ -178,21 +183,37 @@ if(APPLE AND HAVE_FLAG_STDLIB_LIBCPP)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
 
-add_cxx_flag_if_supported("-Wall")
-add_cxx_flag_if_supported("-Wextra")
-add_cxx_flag_if_supported("-pedantic")
-add_cxx_flag_if_supported("-Wunused")
-add_cxx_flag_if_supported("-Wsign-compare")
-add_cxx_flag_if_supported("-Wtype-limits")
-add_cxx_flag_if_supported("-Wuninitialized")
-add_cxx_flag_if_supported("-Wno-deprecated")
-add_cxx_flag_if_supported("-Wstrict-aliasing")
-add_cxx_flag_if_supported("-Wpointer-arith")
-add_cxx_flag_if_supported("-Wheader-guard")
-# add_cxx_flag_if_supported("-fvisibility=hidden")
-add_cxx_flag_if_supported("-Wformat-nonliteral")
-add_cxx_flag_if_supported("-Winit-self")
-add_cxx_flag_if_supported("-Wunreachable-code")
+
+if (NOT MSVC)
+    add_cxx_flag_if_supported("-Wall")
+    add_cxx_flag_if_supported("-Wextra")
+    add_cxx_flag_if_supported("-Wunused")
+    add_cxx_flag_if_supported("-pedantic")
+    add_cxx_flag_if_supported("-Wsign-compare")
+    if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_cxx_flag_if_supported("-fno-omit-frame-pointer")
+    endif()
+    add_cxx_flag_if_supported("-Wtype-limits")
+    add_cxx_flag_if_supported("-Wuninitialized")
+    add_cxx_flag_if_supported("-Wno-deprecated")
+    add_cxx_flag_if_supported("-Wstrict-aliasing")
+    add_cxx_flag_if_supported("-Wpointer-arith")
+    add_cxx_flag_if_supported("-Wheader-guard")
+    #if(NOT ENABLE_TESTING AND ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+        # almost working
+        # add_cxx_flag_if_supported("-fvisibility=hidden")
+        set(CMAKE_EXE_LINKER_FLAGS " ${CMAKE_EXE_LINKER_FLAGS} -Wl,--discard-all -Wl,--build-id=sha1")
+    endif()
+    add_cxx_flag_if_supported("-Wpointer-arith")
+    add_cxx_flag_if_supported("-Wformat-nonliteral")
+    add_cxx_flag_if_supported("-Winit-self")
+    add_cxx_flag_if_supported("-Wparentheses")
+    add_cxx_flag_if_supported("-Wunreachable-code")
+    add_cxx_flag_if_supported("-ggdb3")
+    add_cxx_flag("-fPIC")
+    # add_cxx_flag_if_supported("-flto") # slow compile and not enough benefits
+endif()
 
 add_definitions("-D__STDC_LIMIT_MACROS")
 
@@ -214,14 +235,31 @@ if(WIN32)
   set(PHINTS ${PERL_PATH_HINT} ${FLEX_PATH_HINT} ${BISON_PATH_HINT})
 
   if(MSVC)
-      set(OPTIMIZITION_FLAGS  "/GL /Ox /Oi /Ot /Oy")
+      # see https://msdn.microsoft.com/en-us/library/fwkeyyhe.aspx for details
+      # /ZI = include debug info
+      # /Oy omit frame pointers
+      # /Wall = all warnings
+      # /GL whole program optimisation
+      SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /Ox /ZI")
+      SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O3 /D NDEBUG /ZI")
+      SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Od")
+
+      #don't give too many warnings
+      add_compile_options(/W1)
+
+      # buffers security check
+      add_compile_options(/GS)
+
       set(STP_DEFS_COMM ${STP_DEFS_COMM} -D_CRT_SECURE_NO_WARNINGS)
       set(STP_INCL_COMM windows/winports windows/winports/msc99hdr ${STP_INCL_COMM})
       include_directories(${STP_INCL_COMM})
+      add_subdirectory(windows)
+      set(PLATFORM_COMPAT_LIBRARIES ${PLATFORM_COMPAT_LIBRARIES} windows_compat)
+      set(CMAKE_FIND_LIBRARY_SUFFIXES .lib .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
       # stack size of MSVC must be specified
       string(REGEX REPLACE "/STACK:[0-9]+" "" CMAKE_EXE_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS})
-      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:256000000")
+      set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:512000000")
 
       # inline is not a keyword in visual studios old C version, allow its redefinition
       add_definitions("-D_ALLOW_KEYWORD_MACROS")
@@ -282,10 +320,9 @@ option(ONLY_SIMPLE "Don't try to use boost" OFF)
 if (NOT ONLY_SIMPLE)
   find_package( Boost 1.46 COMPONENTS program_options)
 endif()
+
 if(NOT Boost_FOUND)
   message(STATUS "Only building executable with few command-line options because the boost program_options library were not available")
-else()
-  include_directories(${Boost_INCLUDE_DIRS})
 endif()
 
 
@@ -293,24 +330,36 @@ endif()
 # Find CryptoMiniSat
 # -----------------------------------------------------------------------------
 option(NOCRYPTOMINISAT "Don't try to use cryptominisat" OFF)
-set(cryptominisat_DIR "" CACHE PATH "Path to directory containing cryptominisat5Config.cmake")
-find_package(cryptominisat5 CONFIG)
-if (cryptominisat5_FOUND AND HAVE_FLAG_STD_CPP11 AND (NOT NOCRYPTOMINISAT))
-  message(STATUS "Found CryptoMiniSat 5.x and C++11, allowing --cryptominisat5 option")
-  message(STATUS "CryptoMiniSat5 dynamic lib: ${CRYPTOMINISAT5_LIBRARIES}")
-  message(STATUS "CryptoMiniSat5 static lib:  ${CRYPTOMINISAT5_STATIC_LIBRARIES}")
-  message(STATUS "CryptoMiniSat5 static lib deps: ${CRYPTOMINISAT5_STATIC_LIBRARIES_DEPS}")
-  add_definitions(-DUSE_CRYPTOMINISAT)
-  include_directories(${CRYPTOMINISAT5_INCLUDE_DIRS})
-  set(USE_CRYPTOMINISAT ON)
-else()
-  message(WARNING "CryptoMiniSat5 (5.0 or above) or C++11 support not found, not allowing --cryptominisat option")
+
+if (NOT NOCRYPTOMINISAT)
+  set(cryptominisat_DIR "" CACHE PATH "Path to directory containing cryptominisat5Config.cmake")
+  find_package(cryptominisat5 CONFIG)
+  if (cryptominisat5_FOUND AND HAVE_FLAG_STD_CPP11 AND (NOT NOCRYPTOMINISAT))
+    message(STATUS "Found CryptoMiniSat 5.x and C++11, allowing --cryptominisat5 option")
+    message(STATUS "CryptoMiniSat5 dynamic lib: ${CRYPTOMINISAT5_LIBRARIES}")
+    message(STATUS "CryptoMiniSat5 static lib:  ${CRYPTOMINISAT5_STATIC_LIBRARIES}")
+    message(STATUS "CryptoMiniSat5 static lib deps: ${CRYPTOMINISAT5_STATIC_LIBRARIES_DEPS}")
+    add_definitions(-DUSE_CRYPTOMINISAT)
+    include_directories(${CRYPTOMINISAT5_INCLUDE_DIRS})
+    set(USE_CRYPTOMINISAT ON)
+  else()
+    message(WARNING "CryptoMiniSat5 (5.0 or above) or C++11 support not found, not allowing --cryptominisat option")
+  endif()
 endif()
 
 option(FORCE_CMS "Must build with CryptoMiniSat" OFF)
 if (FORCE_CMS AND NOT USE_CRYPTOMINISAT)
-    message(FATAL_ERROR "CryptoMiniSat 5.x was not found but it was requiested. Exiting.")
+    message(FATAL_ERROR "CryptoMiniSat 5.x was not found but it was requested. Exiting.")
 endif()
+
+# -----------------------------------------------------------------------------
+# Find ZLIB (needed for MiniSat)
+# yes, we need to include the zlib header location or STP will not build
+# thanks to MiniSat include-ing it n the header
+# -----------------------------------------------------------------------------
+find_package(ZLIB)
+include_directories(${ZLIB_INCLUDE_DIR})
+include_directories(${minisat_SOURCE_DIR})
 
 # -----------------------------------------------------------------------------
 # Find Minisat
@@ -346,8 +395,34 @@ message(STATUS "All defines at startup: ${COMPILE_DEFINES}")
 # -----------------------------------------------------------------------------
 # Setup library build path (this is **not** the library install path)
 # -----------------------------------------------------------------------------
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+if(WIN32)
+  # Create a single bin/ output directory so that DLL files can be
+  # readily found on DLL platforms.
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
+endif()
+
+if(DEFINED CMAKE_CONFIGURATION_TYPES)
+  # Placing the binaries in ${CMAKE_*_OUTPUT_DIRECTORY} without regard to
+  # the debug/release/... configuration. This is needed for build systems
+  # where files for multiple configurations are kept within the same build
+  # directory (eg. MSBuild), since some targets (e.g. python-interface-tests)
+  # require the path to the stp library to be given in a configuration file.
+  # Note: the paths could be determined in a cleaner fashion by using generator
+  # expressions, which were used up to commit 1af1f5. However, that solution
+  # was not feasible, since CMake versions provided by recent Debian versions
+  # are buggy w.r.t. generator expressions.
+  foreach(OUTPUTCONFIG ${CMAKE_CONFIGURATION_TYPES})
+    string(TOUPPER ${OUTPUTCONFIG} OUTPUTCONFIG_UPPER)
+    set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+    set(CMAKE_LIBRARY_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${CMAKE_LIBRARY_OUTPUT_DIRECTORY})
+    set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY_${OUTPUTCONFIG_UPPER} ${CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
+  endforeach(OUTPUTCONFIG CMAKE_CONFIGURATION_TYPES)
+else()
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+endif()
 
 # -----------------------------------------------------------------------------
 # Provide an export name to be used by targets that wish to export themselves.
@@ -360,26 +435,31 @@ set(STP_EXPORT_NAME "STPTargets")
 
 option(ENABLE_TESTING "Enable testing" OFF)
 
-if (BUILD_SHARED_LIBS)
-    option(ENABLE_PYTHON_INTERFACE "Enable Python interface" ON)
-else()
-    option(ENABLE_PYTHON_INTERFACE "Enable Python interface" OFF)
-    message(STATUS "Cannot enable testing if shared libs are not built.")
-    set(ENABLE_TESTING OFF)
-endif()
+# try finding python if the user did not explicitly said that
+# he/she does not want python bindings
+if ((NOT DEFINED ENABLE_PYTHON_INTERFACE) OR ENABLE_PYTHON_INTERFACE)
+    find_package (PythonInterp 2.7)
+    find_package (PythonLibs 2.7)
+    if (PYTHON_EXECUTABLE AND PYTHON_LIBRARY AND PYTHON_INCLUDE_DIR)
+        message(STATUS "PYTHON_EXECUTABLE:FILEPATH=${PYTHON_EXECUTABLE}")
+        message(STATUS "PYTHON_LIBRARY:FILEPATH=${PYTHON_LIBRARY}")
+        message(STATUS "PYTHON_INCLUDE_DIR:FILEPATH=${PYTHON_INCLUDE_DIR}")
+        message(STATUS "PYTHONLIBS_VERSION_STRING=${PYTHONLIBS_VERSION_STRING}")
+        set(PYTHON_OK ON)
+        message(STATUS "OK, found python interpreter, libs and header files")
+    else()
+        message(WARNING "Cannot find python interpreter, libs and header files, cannot build python interface")
+    endif()
 
-if (ENABLE_PYTHON_INTERFACE AND NOT BUILD_SHARED_LIBS)
-    message(FATAL_ERROR "Python interface requires shared library")
-endif()
+    if(ENABLE_TESTING AND NOT PYTHON_OK)
+        message(STATUS "Python interpreter and development headers cannot be found. Please install it to have the python interface and to enable testing")
+        set(ENABLE_TESTING OFF)
+    endif()
 
-# Both the testing infrastructure and python interface depend on python
-if(ENABLE_TESTING OR ENABLE_PYTHON_INTERFACE)
-  find_package(PythonInterp REQUIRED)
-  mark_as_advanced(CLEAR PYTHON_EXECUTABLE) # Make visible in cmake-gui/ccmake
-
-  if(NOT PYTHONINTERP_FOUND)
-    message(FATAL_ERROR "Python cannot be found. Please install it or disable testing and/or python interface")
-  endif()
+    if (PYTHON_OK AND NOT STATICCOMPILE)
+        message(STATUS "Python found, enabling python interface")
+        set(ENABLE_PYTHON_INTERFACE ON)
+    endif()
 endif()
 
 # -----------------------------------------------------------------------------
@@ -410,9 +490,7 @@ add_custom_target(uninstall
 
 if(ENABLE_TESTING)
   message(STATUS "Testing is enabled")
-
   set(UNIT_TEST_EXE_SUFFIX "Tests" CACHE STRING "Suffix for Unit test executable")
-
   add_custom_target(check
     COMMENT "top level target to invoke all other tests"
   )
@@ -432,14 +510,10 @@ set(STP_CONFIG_VERSION_FILENAME "STPConfigVersion.cmake")
 
 # Export targets
 if (Boost_FOUND)
-  export(TARGETS stp stp_simple ${STP_SHARED_LIBRARY} ${STP_STATIC_LIBRARY}
-    FILE "${PROJECT_BINARY_DIR}/${STP_TARGETS_FILENAME}"
-  )
-else()
-  export(TARGETS stp_simple ${STP_SHARED_LIBRARY} ${STP_STATIC_LIBRARY}
-    FILE "${PROJECT_BINARY_DIR}/${STP_TARGETS_FILENAME}"
-  )
+    set(EXTRA_EXPORT_TARGETS stp)
 endif()
+export(TARGETS stp_simple libstp ${EXTRA_EXPORT_TARGETS}
+    FILE "${PROJECT_BINARY_DIR}/${STP_TARGETS_FILENAME}")
 
 # Create STPConfig file
 set(EXPORT_TYPE "Build-tree")

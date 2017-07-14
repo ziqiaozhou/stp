@@ -30,7 +30,6 @@ THE SOFTWARE.
 namespace stp
 {
 class STPMgr;
-void FatalError(const char* str);
 
 /******************************************************************
  *  Class to represent internals of a bitvector constant          *
@@ -67,7 +66,7 @@ private:
 
 
   ASTBVConst(CBV bv, unsigned int width);
-  ASTBVConst(STPMgr * mgr, CBV bv, unsigned int width, bool managed_outside = false)
+  ASTBVConst(STPMgr * mgr, CBV bv, unsigned int /*width*/, bool managed_outside = false)
       : ASTInternal(mgr, BVCONST)
   {
     if (managed_outside) {

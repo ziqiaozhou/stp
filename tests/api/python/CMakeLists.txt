@@ -19,13 +19,15 @@
 # THE SOFTWARE.
 
 set(PYTHON_INTERFACE_DIR ${PROJECT_BINARY_DIR}/bindings/python)
-configure_file(tests.py.in tests.py @ONLY)
+configure_file(tests.py.in tests.py.in.g @ONLY)
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/tests.py.in.g
+              ${CMAKE_CURRENT_BINARY_DIR}/tests.py)
 
 add_custom_target(python-interface-tests
                   DEPENDS libstp
                   COMMAND ${PYTHON_EXECUTABLE}
                           ${CMAKE_CURRENT_BINARY_DIR}/tests.py
-                  COMMENT "Running Python interface tests"
+                  COMMENT "Running python-interface-tests"
                  )
 
 # Make sure this test-suite runs when "check" is target

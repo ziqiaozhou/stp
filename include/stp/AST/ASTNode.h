@@ -26,6 +26,7 @@ THE SOFTWARE.
 
 #include "stp/AST/ASTInternal.h"
 #include "stp/AST/NodeFactory/HashingNodeFactory.h"
+#include "stp/Util/Attributes.h"
 
 namespace stp
 {
@@ -50,7 +51,7 @@ class ASTNode
   // Ptr to the read data
   ASTInternal* _int_node_ptr;
 
-  explicit ASTNode(ASTInternal* in);
+  DLL_PUBLIC explicit ASTNode(ASTInternal* in);
 
   // Equal iff ASTIntNode pointers are the same.
   friend bool operator==(const ASTNode& node1, const ASTNode& node2)
@@ -69,13 +70,8 @@ class ASTNode
   }
 
   STPMgr * GetSTPMgr() const;
-  
 
 public:
-  /****************************************************************
-   * Public Member Functions                                      *
-   ****************************************************************/
-
   static int copy;
   static int move;
   static int assign;
@@ -85,15 +81,10 @@ public:
   uint8_t getIteration() const;
   void setIteration(uint8_t v) const;
 
-  // Default constructor.
-  ASTNode() : _int_node_ptr(NULL){};
-
-  // Copy constructor
-  ASTNode(const ASTNode& n);
-
-  ~ASTNode();
-
-  ASTNode ( ASTNode && other ) noexcept;
+  DLL_PUBLIC ASTNode() : _int_node_ptr(NULL){};
+  DLL_PUBLIC ASTNode(const ASTNode& n);
+  DLL_PUBLIC ~ASTNode();
+  DLL_PUBLIC ASTNode ( ASTNode && other ) noexcept;
 
   // Print the arguments in lisp format
   friend ostream& LispPrintVec(ostream& os, const ASTVec& v, int indentation);
@@ -133,8 +124,8 @@ public:
   void nodeprint(ostream& os, bool c_friendly = false) const;
 
   // Assignment (for ref counting)
-  ASTNode& operator=(const ASTNode& n);
-  ASTNode& operator=(ASTNode&& n);
+  DLL_PUBLIC ASTNode& operator=(const ASTNode& n);
+  DLL_PUBLIC ASTNode& operator=(ASTNode&& n);
   
   // Access node number
   unsigned GetNodeNum() const;
@@ -163,8 +154,7 @@ public:
   // Get back() element for child nodes
   const ASTNode back() const { return GetChildren().back(); };
 
-  // Get the name from a symbol (char *).  It's an error if kind !=
-  // SYMBOL.
+  // Get the name from a symbol (char *).  It's an error if kind != SYMBOL.
   const char* GetName() const;
 
   // Get the BVCONST value.
@@ -186,7 +176,7 @@ public:
   types GetType(void) const;
 
   // Hash using pointer value of _int_node_ptr.
-  size_t Hash() const ;
+  DLL_PUBLIC size_t Hash() const ;
 
   void NFASTPrint(int l, int max, int prefix) const;
 
@@ -196,7 +186,7 @@ public:
 
   // Presentation Language Printer
   ostream& PL_Print(ostream& os , STPMgr *mgr, int indentation = 0) const;
-  ostream& PL_Print(ostream& os , int indentation = 0) const
+  ostream& PL_Print(ostream& os , int /*indentation = 0*/) const
   {
     return PL_Print(os, GetSTPMgr(), 0);
   }

@@ -46,6 +46,7 @@
 
 #include "stp/cpp_interface.h"
 #include "stp/Parser/LetMgr.h"
+#include "stp/Parser/parser.h"
 
   using namespace stp;
   using std::cout;
@@ -107,6 +108,8 @@
 %token DIFFICULTY_TOK
 %token VERSION_TOK
 %token STATUS_TOK
+%token LICENSE_TOK
+
 
  /* ASCII Symbols */
  /* Semicolons (comments) are ignored by the lexer */
@@ -504,6 +507,7 @@ SOURCE_TOK
 {}
 | STATUS_TOK status
 {} 
+| LICENSE_TOK
 ;
 
 
@@ -1285,3 +1289,9 @@ TERMID_TOK
 ;
 
 %%
+
+namespace stp {
+  int SMT2Parse() {
+    return smt2parse();
+  }
+}

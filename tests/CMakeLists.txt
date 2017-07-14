@@ -41,7 +41,7 @@ if(NOT EXISTS "${LIT_TOOL}")
     message(FATAL_ERROR "LIT_TOOL is set but the path does not seem to exist. Try deleting the LIT_TOOL cache variable and reconfiguring")
 endif()
 
-set(LIT_ARGS -v -s CACHE STRING "Arguments to pass to lit")
+set(LIT_ARGS -s CACHE STRING "Arguments to pass to lit")
 
 # -----------------------------------------------------------------------------
 # Find GTest library which will be used to drive tests
@@ -60,6 +60,11 @@ if (NOT EXISTS "${GTEST_PREFIX}/CMakeLists.txt")
     message(FATAL_ERROR "Could not find GTest. Did you remember to add the submodules (``git submodule init && git submodule update``)?")
 endif()
 
+if (MSVC)
+  # STP is built with the shared version of the CRT, gtest defaults to the
+  # static one, and they can't be mixed. Foring gtest to use the dynamic one.
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+endif()
 
 add_subdirectory(${GTEST_PREFIX} gtest)
 set(GTEST_BOTH_LIBRARIES gtest gtest_main)

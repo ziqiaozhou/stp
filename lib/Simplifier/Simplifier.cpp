@@ -224,7 +224,7 @@ bool Simplifier::CheckAlwaysTrueFormSet(const ASTNode& key, bool& result)
   return false;
 }
 
-void Simplifier::UpdateAlwaysTrueFormSet(const ASTNode& key)
+void Simplifier::UpdateAlwaysTrueFormSet(const ASTNode& /*key*/)
 {
   // The always true/ always false relies on the top level constraint not being
   // removed.
@@ -237,8 +237,9 @@ void Simplifier::UpdateAlwaysTrueFormSet(const ASTNode& key)
   // the constraint is lost. This is subsumed by constant bit propagation, so I
   // suspect
   // it's not a big loss.
-  if (false)//(!_bm->UserFlags.isSet("bb-equiv", "1"))
-    AlwaysTrueHashSet.insert(key.GetNodeNum());
+
+    /*if (false)//(!_bm->UserFlags.isSet("bb-equiv", "1"))
+    AlwaysTrueHashSet.insert(key.GetNodeNum());*/
 }
 
 ASTNode Simplifier::SimplifyFormula_NoRemoveWrites(const ASTNode& b,
@@ -519,7 +520,6 @@ ASTNode replaceIteConst(const ASTNode& n, const ASTNode& newVal,
                           replaceIteConst(n[2], newVal, nf));
   }
   FatalError("never here", n);
-  exit(-1);
 }
 
 bool getPossibleValues(const ASTNode& n, ASTNodeSet& visited,
@@ -557,7 +557,7 @@ bool getPossibleValues(const ASTNode& n, ASTNodeSet& visited,
 unsigned numberOfLeadingZeroes(const ASTNode& n)
 {
   unsigned c = mostSignificantConstants(n);
-  if (c <= 0)
+  if (c == 0)
     return 0;
 
   for (unsigned i = 0; i < c; i++)
@@ -1687,7 +1687,6 @@ ASTNode Simplifier::pullUpBVSX(ASTNode output)
 
     default:
       FatalError("Unexpected.");
-      maxLength = 0;
   }
 
   if (maxLength < output.GetValueWidth())
@@ -2923,11 +2922,6 @@ ASTNode Simplifier::simplify_term_switch(const ASTNode& actualInputterm,
 
     case BVDIV:
     {
-      if (inputterm[0] == inputterm[1])
-      {
-        output = _bm->CreateOneConst(inputValueWidth);
-        break;
-      }
       if (inputterm[1] == _bm->CreateOneConst(inputValueWidth))
       {
         output = inputterm[0];
@@ -2935,7 +2929,10 @@ ASTNode Simplifier::simplify_term_switch(const ASTNode& actualInputterm,
       }
       unsigned int nlz = numberOfLeadingZeroes(inputterm[0]);
       nlz = std::min(inputValueWidth - 1, nlz);
-      if (nlz > 0)
+      
+      // We can't do this if the second operand might be zero.
+      ASTNode eq = nf->CreateNode(EQ, inputterm[1], _bm->CreateZeroConst(inputValueWidth));
+      if (nlz > 0 && eq == ASTFalse)
       {
         int rest = inputValueWidth - nlz;
         ASTNode low = _bm->CreateBVConst(32, rest);
@@ -3142,12 +3139,6 @@ ASTNode Simplifier::simplify_term_switch(const ASTNode& actualInputterm,
     case SBVREM:
     case SBVMOD:
     {
-      if (inputterm[0] == inputterm[1])
-      {
-        output = _bm->CreateZeroConst(inputValueWidth);
-        break;
-      }
-
       output = inputterm;
       break;
     }
@@ -3155,11 +3146,6 @@ ASTNode Simplifier::simplify_term_switch(const ASTNode& actualInputterm,
     case SBVDIV:
     {
       output = inputterm;
-      if (inputterm[0] == inputterm[1])
-      {
-        output = _bm->CreateOneConst(inputValueWidth);
-        break;
-      }
       if (SBVDIV == output.GetKind() && output.GetChildren().size() == 2 &&
           output.GetChildren()[0].GetKind() == BVSX &&
           output.GetChildren()[1].GetKind() == BVSX)
@@ -3468,10 +3454,6 @@ ASTNode Simplifier::DistributeMultOverPlus(const ASTNode& a,
         nf->CreateTerm(BVMULT, a.GetValueWidth(), left, right[0]));
     c = nf->CreateTerm(BVMULT, a.GetValueWidth(), c, right[1]);
     return c;
-    left = c[0];
-    right = c[1];
-    left_kind = left.GetKind();
-    right_kind = right.GetKind();
   }
 
   // special case optimization: c1*(t1*c2) <==> (c1*c2)*t1
@@ -3482,10 +3464,6 @@ ASTNode Simplifier::DistributeMultOverPlus(const ASTNode& a,
         nf->CreateTerm(BVMULT, a.GetValueWidth(), left, right[1]));
     c = nf->CreateTerm(BVMULT, a.GetValueWidth(), c, right[0]);
     return c;
-    left = c[0];
-    right = c[1];
-    left_kind = left.GetKind();
-    right_kind = right.GetKind();
   }
 
   // atleast one of left or right have to be BVPLUS

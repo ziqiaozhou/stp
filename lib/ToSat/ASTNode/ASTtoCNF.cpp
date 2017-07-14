@@ -491,11 +491,13 @@ ASTNode* ASTtoCNF::doRenameITE(const ASTNode& varphi, ClauseList* defs)
   ClauseList* cl2 = ClauseList::PRODUCT(*(info[varphi[0]]->clausesneg), *cl1);
   DELETE(cl1);
   defs->insert(cl2);
+  delete cl2;
 
   ClauseList* cl3 = SINGLETON(bm->CreateNode(EQ, psi, t2));
   ClauseList* cl4 = ClauseList::PRODUCT(*(info[varphi[0]]->clausespos), *cl3);
   DELETE(cl3);
   defs->insert(cl4);
+  delete cl4;
 
   return ASTNodeToASTNodePtr(psi);
 }
@@ -868,7 +870,6 @@ void ASTtoCNF::convertFormulaToCNFPosNAND(const ASTNode& varphi, ClauseList* def
   bool renamesibs = false;
   ClauseList* clauses;
   ClauseList* psi;
-  ClauseList* oldpsi;
 
   //****************************************
   // (pos) NAND ~> PRODUCT NOT
@@ -896,7 +897,7 @@ void ASTtoCNF::convertFormulaToCNFPosNAND(const ASTNode& varphi, ClauseList* def
     {
       renamesibs = true;
     }
-    oldpsi = psi;
+    ClauseList* oldpsi = psi;
     psi = ClauseList::PRODUCT(*psi, *clauses);
     reduceMemoryFootprintNeg(*it);
     DELETE(oldpsi);
@@ -1443,7 +1444,6 @@ void ASTtoCNF::reduceMemoryFootprintPos(const ASTNode& varphi)
   if (sharesPos(*x) == 1)
   {
     DELETE(x->clausespos);
-    x->clausespos = NULL;
     if (x->clausesneg == NULL)
     {
       delete x;
@@ -1458,7 +1458,6 @@ void ASTtoCNF::reduceMemoryFootprintNeg(const ASTNode& varphi)
   if (sharesNeg(*x) == 1)
   {
     DELETE(x->clausesneg);
-    x->clausesneg = NULL;
     if (x->clausespos == NULL)
     {
       delete x;
@@ -1550,7 +1549,7 @@ ClauseList* ASTtoCNF::convertToCNF(const ASTNode& varphi)
   return defs;
 }
 
-void ASTtoCNF::DELETE(ClauseList* varphi)
+void ASTtoCNF::DELETE(ClauseList*& varphi)
 {
   varphi->deleteJustVectors();
   delete varphi;

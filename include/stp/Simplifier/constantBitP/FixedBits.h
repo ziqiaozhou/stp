@@ -25,9 +25,13 @@ THE SOFTWARE.
 #ifndef FIXEDBITS_H_
 #define FIXEDBITS_H_
 
+#include <stp/Util/Attributes.h>
+#include "stp/Util/Attributes.h"
+
 #include <vector>
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 
 class MTRand;
 
@@ -35,7 +39,7 @@ namespace stp
 {
 class ASTNode;
 typedef unsigned int* CBV;
-void FatalError(const char* str);
+DLL_PUBLIC ATTR_NORETURN void FatalError(const char* str);
 }
 
 namespace simplifier

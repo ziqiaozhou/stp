@@ -276,17 +276,8 @@ ASTNode SimplifyingNodeFactory::CreateNode(Kind kind, const ASTVec& children)
       assert(children.size() == 2);
       ASTVec newCh;
       newCh.reserve(2);
-      if (false)
-      {
-        newCh.push_back(CreateSimpleNot(children[0]));
-        newCh.push_back(children[1]);
-        result = CreateSimpleXor(newCh);
-      }
-      else
-      {
-        result = CreateSimpleXor(children);
-        result = CreateSimpleNot(result);
-      }
+      result = CreateSimpleXor(children);
+      result = CreateSimpleNot(result);
       break;
     }
     case stp::IMPLIES:
@@ -640,7 +631,7 @@ ASTNode SimplifyingNodeFactory::CreateSimpleEQ(const ASTVec& children)
   }
 
   if (k1 == stp::BVCONST && k2 == stp::BVSX &&
-      (in2[0].GetValueWidth() != width))
+      (in2[0].GetValueWidth() != (unsigned)width))
   {
     // Each of the bits in the extended part, and one into the un-extended part
     // must be the same.
@@ -670,13 +661,10 @@ ASTNode SimplifyingNodeFactory::CreateSimpleEQ(const ASTVec& children)
   }
 
   // Simplifiy (5 = 4/x) to FALSE.
-  if (bm.UserFlags.division_by_zero_returns_one_flag && k1 == stp::BVCONST &&
-      k2 == stp::BVDIV && in2[0].GetKind() == stp::BVCONST)
+  if (k1 == stp::BVCONST && k2 == stp::BVDIV && in2[0].GetKind() == stp::BVCONST)
   {
-    ASTNode oneV = bm.CreateOneConst(width);
-    if (CONSTANTBV::BitVector_Lexicompare(in1.GetBVConst(), oneV.GetBVConst()) >
-            0 &&
-        in1 != oneV &&
+    ASTNode maxV = bm.CreateMaxConst(width);
+    if (CONSTANTBV::BitVector_Lexicompare(in1.GetBVConst(), maxV.GetBVConst()) != 0 &&
         CONSTANTBV::BitVector_Lexicompare(in1.GetBVConst(),
                                           in2[0].GetBVConst()) > 0)
     {
@@ -1640,48 +1628,20 @@ ASTNode SimplifyingNodeFactory::CreateTerm(Kind kind, unsigned int width,
             bm.CreateOneConst(width), bm.CreateZeroConst(width));
       }
       else if (children[1].isConstant() &&
-               children[1] == bm.CreateZeroConst(width) &&
-               bm.UserFlags.division_by_zero_returns_one_flag)
-        result = bm.CreateOneConst(width);
-      else if (bm.UserFlags.division_by_zero_returns_one_flag &&
-               children[0] == children[1])
-        result = bm.CreateOneConst(width);
-      else if (bm.UserFlags.division_by_zero_returns_one_flag &&
-               children[0].isConstant() &&
+               children[1] == bm.CreateZeroConst(width))
+        result = bm.CreateMaxConst(width);
+      else if (children[0].isConstant() &&
                CONSTANTBV::BitVector_is_empty(children[0].GetBVConst()))
         result = NodeFactory::CreateTerm(
             ITE, width,
             NodeFactory::CreateNode(EQ, children[1], bm.CreateZeroConst(width)),
-            bm.CreateOneConst(width), bm.CreateZeroConst(width));
-      else if (bm.UserFlags.division_by_zero_returns_one_flag && width >= 2 &&
-               children[0].GetKind() == BVNOT &&
-               children[1].GetKind() == BVUMINUS &&
-               children[1][0] == children[0][0])
-        result = NodeFactory::CreateTerm(
-            ITE, width, NodeFactory::CreateNode(EQ, bm.CreateZeroConst(width),
-                                                children[0][0]),
-            bm.CreateOneConst(width), bm.CreateZeroConst(width));
-
+            bm.CreateMaxConst(width), bm.CreateZeroConst(width));
+      
       break;
 
     case SBVDIV:
       if (children[1].isConstant() && children[1] == bm.CreateOneConst(width))
         result = children[0];
-      else if (children[0] == children[1] &&
-               bm.UserFlags.division_by_zero_returns_one_flag)
-        result = bm.CreateOneConst(width);
-      else if (children[1].GetKind() == BVUMINUS &&
-               children[0] == children[1][0] &&
-               bm.UserFlags.division_by_zero_returns_one_flag)
-        result =
-            NodeFactory::CreateTerm(SBVDIV, width, children[1], children[0]);
-      else if (bm.UserFlags.division_by_zero_returns_one_flag &&
-               children[0].isConstant() &&
-               CONSTANTBV::BitVector_is_empty(children[0].GetBVConst()))
-        result = NodeFactory::CreateTerm(
-            ITE, width,
-            NodeFactory::CreateNode(EQ, children[1], bm.CreateZeroConst(width)),
-            bm.CreateOneConst(width), bm.CreateZeroConst(width));
       if (children[1].isConstant() &&
           CONSTANTBV::BitVector_is_full(children[1].GetBVConst()))
         result = NodeFactory::CreateTerm(BVUMINUS, width, children[0]);

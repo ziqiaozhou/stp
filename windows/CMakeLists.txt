@@ -1,6 +1,5 @@
-#author: Dan Liew
-#date: Sep, 2014
-# 
+# AUTHORS: Felix Kutzner
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -19,5 +18,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 
-
-from .stp import Expr, Solver, stp, add, bitvec, bitvecs, check, model
+add_library(windows_compat OBJECT
+    winports/time.cpp
+)

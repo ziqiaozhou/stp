@@ -25,11 +25,8 @@ THE SOFTWARE.
 #include "stp/AST/AST.h"
 #include "stp/STPManager/STPManager.h"
 #include "stp/Util/NodeIterator.h"
-#ifdef _MSC_VER
-// avoid TRUE and FALSE to be set to 1 and 0 in winmin.h
-#define TRUE TRUE
-#define FALSE FALSE
-#else
+
+#if !defined(_MSC_VER)
 // Needed for signal()
 #include <unistd.h>
 #endif
@@ -225,11 +222,16 @@ bool BVTypeCheckRecursive(const ASTNode& n)
 {
   const ASTVec& c = n.GetChildren();
 
-  BVTypeCheck(n);
+  if (!BVTypeCheck(n)) {
+    return false;
+  }
 
   for (ASTVec::const_iterator it = c.begin(), itend = c.end(); it != itend;
-       it++)
-    BVTypeCheckRecursive(*it);
+       it++) {
+    if (!BVTypeCheckRecursive(*it)) {
+      return false;
+    }
+  }
 
   return true;
 }
