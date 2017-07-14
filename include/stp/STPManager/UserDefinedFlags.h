@@ -131,12 +131,13 @@ public:
   bool exit_after_CNF;
 
   int num_solver_threads;
-
+  std::string astfilename;
+  std::string cnffilename;
   // Available back-end SAT solvers.
   enum SATSolvers
   {
-    MINISAT_SOLVER = 0,
-    SIMPLIFYING_MINISAT_SOLVER,
+	  MINISAT_SOLVER = 0,
+	  SIMPLIFYING_MINISAT_SOLVER,
     CRYPTOMINISAT5_SOLVER
   };
 
@@ -186,6 +187,8 @@ public:
     traditional_cnf = false;
     simple_cnf = false;
     ackermannisation = false; 
+	astfilename="name_cnf.txt";
+	cnffilename="output_0.cnf";
     check_counterexample_flag = false;
     print_counterexample_flag = false;
     print_binary_flag = false;

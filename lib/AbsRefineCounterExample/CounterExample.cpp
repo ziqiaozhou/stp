@@ -53,7 +53,7 @@ void AbsRefine_CounterExample::ConstructCounterExample(
 
   CopySolverMap_To_CounterExample();
   std::ofstream f;
-f.open("name_cnf.txt");
+  f.open(bm->UserFlags.astfilename);
 
   for (ToSATBase::ASTNodeToSATVar::const_iterator it = satVarToSymbol.begin();
 			  it != satVarToSymbol.end(); it++)

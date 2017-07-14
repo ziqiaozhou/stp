@@ -208,7 +208,8 @@ void ToSAT::dump_to_cnf_file(const SATSolver& newSolver,
   // of the solver each time.
   std::ofstream file;
   std::stringstream fileName;
-  fileName << "output_" << CNFFileNameCounter++ << ".cnf";
+  //fileName << "output_" << CNFFileNameCounter++ << ".cnf";
+  fileName<<bm->UserFlags.cnffilename;
   file.open(fileName.str().c_str());
 
   file << "p cnf " << newSolver.nVars() << " " << cll.size() << endl;

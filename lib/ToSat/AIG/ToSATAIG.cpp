@@ -88,7 +88,8 @@ void ToSATAIG::handle_cnf_options(Cnf_Dat_t* cnfData, bool needAbsRef)
   if (bm->UserFlags.output_CNF_flag)
   {
     std::stringstream fileName;
-    fileName << "output_" << bm->CNFFileNameCounter++ << ".cnf";
+    //fileName << "output_" << bm->CNFFileNameCounter++ << ".cnf";
+	fileName<<bm->UserFlags.cnffilename;
     Cnf_DataWriteIntoFile(cnfData, (char*)fileName.str().c_str(), 0);
   }
 

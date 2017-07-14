@@ -185,6 +185,8 @@ void ExtraMain::create_options()
   ("print-stpinput,b",
       po::bool_switch(&(bm->UserFlags.print_STPinput_back_flag)),
       "print STP input back to cout")
+ ("namefile", po::value<string>(&bm->UserFlags.astfilename), "input ast name file")
+ ("cnffile", po::value<string>(&bm->UserFlags.cnffilename), "input cnf name file")
   ("print-back-CVC",
       po::bool_switch(&(bm->UserFlags.print_STPinput_back_CVC_flag)),
       "print input in CVC format, then exit")
