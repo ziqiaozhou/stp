@@ -20,7 +20,8 @@
 
 project(STP)
 cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
-
+set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD 11)
 
 if(NOT (CMAKE_MAJOR_VERSION LESS 2))
     if(POLICY CMP0048)
@@ -161,28 +162,10 @@ macro(add_cxx_flag_if_supported flagname)
 endmacro()
 
 check_cxx_compiler_flag("-std=c++11" HAVE_FLAG_STD_CPP11)
-check_cxx_compiler_flag("-std=gnu++11" HAVE_FLAG_STD_GNUCPP11)
-check_cxx_compiler_flag("-std=gnu++0x" HAVE_FLAG_STD_GNUCPP0X)
-check_cxx_compiler_flag("-std=c++0x" HAVE_FLAG_STD_CPP0X)
-check_cxx_compiler_flag("-stdlib=libc++" HAVE_FLAG_STDLIB_LIBCPP)
 
-#needed for MiniSat's PRi64 to set stdc++ to 03 temporarily
-check_cxx_compiler_flag("-std=c++03" HAVE_FLAG_CPP03)
-
-if(HAVE_FLAG_STD_CPP11)
-  set(CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS}")
-elseif(HAVE_FLAG_STD_GNUCPP11)
-  set(CMAKE_CXX_FLAGS "-std=gnu++11 ${CMAKE_CXX_FLAGS}")
-elseif(HAVE_FLAG_STD_GNUCPP0X)
-  set(CMAKE_CXX_FLAGS "-std=gnu++0x ${CMAKE_CXX_FLAGS}")
-elseif(HAVE_FLAG_STD_CPP0X)
-  set(CMAKE_CXX_FLAGS "-std=c++0x ${CMAKE_CXX_FLAGS}")
-endif()
-
-if(APPLE AND HAVE_FLAG_STDLIB_LIBCPP)
+if(APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
 endif()
-
 
 if (NOT MSVC)
     add_cxx_flag_if_supported("-Wall")
@@ -451,11 +434,6 @@ if ((NOT DEFINED ENABLE_PYTHON_INTERFACE) OR ENABLE_PYTHON_INTERFACE)
         message(WARNING "Cannot find python interpreter, libs and header files, cannot build python interface")
     endif()
 
-    if(ENABLE_TESTING AND NOT PYTHON_OK)
-        message(STATUS "Python interpreter and development headers cannot be found. Please install it to have the python interface and to enable testing")
-        set(ENABLE_TESTING OFF)
-    endif()
-
     if (PYTHON_OK AND NOT STATICCOMPILE)
         message(STATUS "Python found, enabling python interface")
         set(ENABLE_PYTHON_INTERFACE ON)
@@ -487,6 +465,11 @@ add_custom_target(uninstall
 # -----------------------------------------------------------------------------
 # Add tests if required
 # -----------------------------------------------------------------------------
+
+if(ENABLE_TESTING AND NOT PYTHON_EXECUTABLE)
+    message(STATUS "Python interpreter cannot be found. Please install it to have the python interface and to enable testing")
+    set(ENABLE_TESTING OFF)
+endif()
 
 if(ENABLE_TESTING)
   message(STATUS "Testing is enabled")
