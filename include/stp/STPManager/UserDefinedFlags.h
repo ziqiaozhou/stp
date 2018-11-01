@@ -133,16 +133,11 @@ public:
   // Available back-end SAT solvers.
   enum SATSolvers
   {
-<<<<<<< HEAD
-	  MINISAT_SOLVER = 0,
-	  SIMPLIFYING_MINISAT_SOLVER,
-    CRYPTOMINISAT5_SOLVER
-=======
+
     MINISAT_SOLVER = 0,
     SIMPLIFYING_MINISAT_SOLVER,
     CRYPTOMINISAT5_SOLVER,
     RISS_SOLVER
->>>>>>> 80742b4858e695e741a30f6d4111ee63e6917e9c
   };
 
   enum SATSolvers solver_to_use;
