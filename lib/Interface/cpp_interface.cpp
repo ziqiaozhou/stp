@@ -23,10 +23,10 @@ THE SOFTWARE.
 ********************************************************************/
 
 #include "stp/cpp_interface.h"
-#include "stp/ToSat/AIG/ToSATAIG.h"
-#include "stp/STPManager/STPManager.h"
-#include "stp/STPManager/STP.h"
 #include "stp/Parser/LetMgr.h"
+#include "stp/STPManager/STP.h"
+#include "stp/STPManager/STPManager.h"
+#include "stp/ToSat/AIG/ToSATAIG.h"
 #include <cassert>
 
 using std::cerr;
@@ -56,6 +56,7 @@ void Cpp_interface::init()
   print_success = false;
   ignoreCheckSatRequest = false;
   produce_models = false;
+  changed_model_status = false;
 }
 
 Cpp_interface::Cpp_interface(STPMgr& bm_, NodeFactory* factory)
@@ -99,7 +100,6 @@ void Cpp_interface::SetQuery(const ASTNode& q)
   bm.SetQuery(q);
 }
 
-
 ASTNode Cpp_interface::CreateNode(stp::Kind kind, const stp::ASTVec& children)
 {
   return nf->CreateNode(kind, children);
@@ -111,7 +111,8 @@ ASTNode Cpp_interface::CreateNode(stp::Kind kind, const stp::ASTNode n0,
   if (n0.GetIndexWidth() > 0 && !alreadyWarned)
   {
     cerr << "Warning: Parsing a term that uses array extensionality. "
-            "STP doesn't handle array extensionality." << endl;
+            "STP doesn't handle array extensionality."
+         << endl;
     alreadyWarned = true;
   }
   return nf->CreateNode(kind, n0, n1);
@@ -162,7 +163,6 @@ void Cpp_interface::removeSymbol(ASTNode s)
 
   if (!removed)
     FatalError("Should have been removed...");
-
 }
 
 void Cpp_interface::storeFunction(const string name, const ASTVec& params,
@@ -297,7 +297,6 @@ void Cpp_interface::unsupported()
   flush(cout);
 }
 
-
 void Cpp_interface::resetSolver()
 {
   bm.ClearAllTables();
@@ -311,25 +310,24 @@ void Cpp_interface::reset()
 
   if (symbols.size() > 0)
   {
-    // used just by cvc parser. 
-    assert(letMgr->_parser_symbol_table.size() == 0); 
+    // used just by cvc parser.
+    assert(letMgr->_parser_symbol_table.size() == 0);
 
     symbols.erase(symbols.end() - 1);
   }
 
-  assert(symbols.size() ==0);
-  
+  assert(symbols.size() == 0);
+
   // These tables might hold references to symbols that have been
   // removed.
   resetSolver();
 
   cleanUp();
-  
+
   checkInvariant();
 
   init();
 }
-
 
 void Cpp_interface::popToFirstLevel()
 {
@@ -356,8 +354,8 @@ void Cpp_interface::pop()
 
   cache.erase(cache.end() - 1);
 
-  assert(letMgr->_parser_symbol_table.size() == 0); 
-  
+  assert(letMgr->_parser_symbol_table.size() == 0);
+
   symbols.erase(symbols.end() - 1);
   checkInvariant();
 }
@@ -400,6 +398,13 @@ void Cpp_interface::checkSat(const ASTVec& assertionsSMT2)
 
   checkInvariant();
   assert(assertionsSMT2.size() == cache.size());
+
+  // If there are no model commands in the STMLIB2 (say) file, then the command line
+  // argument might set that asks for the model to be checked.
+  if (changed_model_status)
+  {
+    bm.UserFlags.check_counterexample_flag = produce_models;
+  }
 
   Entry& last_run = cache.back();
   if (((unsigned)last_run.node_number != assertionsSMT2.back().GetNodeNum()) &&
@@ -486,9 +491,9 @@ void Cpp_interface::cleanUp()
   symbols.clear();
 }
 
-  void Cpp_interface::setOption(std::string option, std::string value)
-  {
-      /*
+void Cpp_interface::setOption(std::string option, std::string value)
+{
+  /*
       :diagnostic-output-channel
       :global-declarations
       :interactive-mode
@@ -503,73 +508,82 @@ void Cpp_interface::cleanUp()
       :verbosity
       */
 
-     if(option == "print-success")
-      {
-        if (value =="true")
-          setPrintSuccess(true);
-        else if (value =="false")
-          setPrintSuccess(false);
-        else
-          unsupported();
-      }
-     else if(option == "produce-models")
-      {
-        if (value =="true")
-          {
-            produce_models = true;
-            success();
-          }
-        else if (value =="false")
-          {
-            produce_models = false;
-            success();
-          }
-        else
-          unsupported();
-      }
-      else
-        unsupported();
-  }
-  
-  void Cpp_interface::getOption(std::string )
+  if (option == "print-success")
   {
+    if (value == "true")
+      setPrintSuccess(true);
+    else if (value == "false")
+      setPrintSuccess(false);
+    else
       unsupported();
   }
-
-  void Cpp_interface::getValue(const ASTVec &v)
+  else if (option == "produce-models")
   {
-    std::ostringstream os;
+    changed_model_status = true;
 
-    os << "("<< std::endl;
-    
-    for (ASTNode n: v)
-      {
-        if (n.GetKind() != SYMBOL)
-        {
-          unsupported();
-          return;
-        }
-        GlobalSTP->Ctr_Example->PrintSMTLIB2(os,n);
-        os << std::endl;        
-      }
-    os << ")" << std::endl;
-
-    cout << os.str();
+    if (value == "true")
+    {
+      produce_models = true;
+      success();
+    }
+    else if (value == "false")
+    {
+      produce_models = false;
+      success();
+    }
+    else
+      unsupported();
   }
+  else
+    unsupported();
+}
 
-  void Cpp_interface::getModel()
+void Cpp_interface::getOption(std::string)
+{
+  unsupported();
+}
+
+void Cpp_interface::getValue(const ASTVec& v)
+{
+  std::ostringstream os;
+
+  os << "(" << std::endl;
+
+  for (ASTNode n : v)
   {
-    //TODO check that produce-models is turned on.
-    //Check that check-sat was just called.
-    cout << "("<< std::endl;
+    if (n.GetKind() != SYMBOL)
+    {
+      unsupported();
+      return;
+    }
+    GlobalSTP->Ctr_Example->PrintSMTLIB2(os, n);
+    os << std::endl;
+  }
+  os << ")" << std::endl;
 
-    std::ostringstream os;
-    GlobalSTP->Ctr_Example->PrintCounterExampleSMTLIB2(os);
-    cout << os.str();
-    cout << ")" << std::endl;
+  cout << os.str();
+}
+
+void Cpp_interface::getModel()
+{
+  if (!bm.UserFlags.construct_counterexample_flag)
+  {
+    // Perhaps this is confusing and instead it whould return "()"?
+    // TODO should come in here if the last was unsat/unknown or stuff was added.
+    unsupported();
+    return;
   }
 
-  void CNFClearMemory() {
-    Cnf_ClearMemory();
-  }
+  cout << "(" << std::endl;
+
+  std::ostringstream os;
+  GlobalSTP->Ctr_Example->PrintCounterExampleSMTLIB2(os);
+  cout << os.str();
+  cout << ")" << std::endl;
+}
+
+void CNFClearMemory()
+{
+  Cnf_ClearMemory();
+}
 }

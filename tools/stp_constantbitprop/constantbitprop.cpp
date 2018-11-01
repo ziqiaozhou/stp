@@ -21,24 +21,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 // Parses, runs constant bit propagation, then outputs the result.
 
-#include "stp/Simplifier/constantBitP/ConstantBitPropagation.h"
 #include "stp/AST/AST.h"
 #include "stp/Printer/printers.h"
+#include "stp/Simplifier/constantBitP/ConstantBitPropagation.h"
 
-#include "stp/STPManager/STPManager.h"
-#include "stp/ToSat/AIG/ToSATAIG.h"
-#include "stp/Sat/MinisatCore.h"
 #include "stp/STPManager/STP.h"
+#include "stp/STPManager/STPManager.h"
+#include "stp/Sat/MinisatCore.h"
+#include "stp/ToSat/AIG/ToSATAIG.h"
 #include "stp/cpp_interface.h"
+#include "stp/Parser/parser.h"
+
 
 using namespace simplifier::constantBitP;
 using namespace stp;
 
 int main(int argc, char** argv)
 {
-  extern int smt2parse();
   extern int smt2lex_destroy(void);
-  extern FILE* smt2in;
 
   STPMgr stp;
   STPMgr* mgr = &stp;
@@ -51,7 +51,7 @@ int main(int argc, char** argv)
   Simplifier* simp = new Simplifier(mgr);
   ArrayTransformer* at = new ArrayTransformer(mgr, simp);
   AbsRefine_CounterExample* abs = new AbsRefine_CounterExample(mgr, simp, at);
-  ToSATAIG* tosat = new ToSATAIG(mgr, at);
+  ToSAT* tosat = new ToSAT(mgr);
 
   GlobalSTP = new STP(mgr, simp, at, tosat, abs);
 
@@ -65,14 +65,13 @@ int main(int argc, char** argv)
   mgr->GetRunTimes()->start(RunTimes::Parsing);
   if (argc > 1)
   {
-    smt2in = fopen(argv[1], "r");
-    smt2parse();
+    setSMT2In(fopen(argv[1], "r"));
   }
   else
   {
-    smt2in = NULL; // from stdin.
-    smt2parse();
+    setSMT2In(NULL);
   }
+  SMT2Parse();
   smt2lex_destroy();
   //-----------------------------------------------------
 

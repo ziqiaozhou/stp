@@ -38,7 +38,7 @@ class ArrayTransformer;
 
 const bool debug_substn = false;
 
-class SubstitutionMap // not copyable
+class DLL_PUBLIC SubstitutionMap // not copyable
 {
 
   ASTNodeMap* SolverMap;
@@ -48,7 +48,8 @@ class SubstitutionMap // not copyable
   NodeFactory* nf;
 
   // These are used to avoid substituting {x = f(y,z), z = f(x)}
-  typedef std::unordered_map<ASTNode, Symbols*, ASTNode::ASTNodeHasher> DependsType;
+  typedef std::unordered_map<ASTNode, Symbols*, ASTNode::ASTNodeHasher>
+      DependsType;
   DependsType dependsOn; // The lhs depends on the variables in the rhs.
   ASTNodeSet rhs;        // All the rhs that have been seeen.
   std::set<ASTNodeSet*> rhsAlreadyAdded;
@@ -66,11 +67,7 @@ class SubstitutionMap // not copyable
   VariablesInExpression vars;
 
 public:
-
-  VariablesInExpression& getVariablesInExpression()
-  {
-    return vars;
-  }
+  VariablesInExpression& getVariablesInExpression() { return vars; }
 
   bool hasUnappliedSubstitutions()
   {
@@ -88,7 +85,7 @@ public:
     substitutionsLastApplied = SolverMap->size();
   }
 
-  DLL_PUBLIC SubstitutionMap(Simplifier* _simp, STPMgr* _bm)
+  SubstitutionMap(Simplifier* _simp, STPMgr* _bm)
   {
     simp = _simp;
     bm = _bm;
@@ -109,7 +106,7 @@ public:
     haveAppliedSubstitutionMap();
   }
 
-  DLL_PUBLIC virtual ~SubstitutionMap();
+  virtual ~SubstitutionMap();
 
   // check the solver map for 'key'. If key is present, then return the
   // value by reference in the argument 'output'

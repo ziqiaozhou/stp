@@ -94,30 +94,37 @@ struct Functions
 
   Functions()
   {
-    //TODO
-    /*l.push_back(Function(BVSGE, "signed greater than equals",
+    l.push_back(Function(stp::BVSGE, "signed greater than equals",
         &bvSignedGreaterThanEqualsBothWays, NULL));
+
+    //l.push_back(Function(stp::BVLT, "unsigned less than", &bvLessThanBothWays, &ltF));
+  
+  
+    //TODO
+    /*
     l.push_back(Function(BVSRSHIFT, "arithmetic shift",
                          &bvArithmeticRightShiftBothWays, NULL));
     l.push_back(Function(SBVDIV, "signed division", &signedDivide, NULL));
-    l.push_back(Function(SBVREM, "signed remainder", &signedRemainder, NULL));*/
+    l.push_back(Function(SBVREM, "signed remainder", &signedRemainder, NULL));
 
     l.push_back(
-        Function(stp::BVLT, "unsigned less than", &bvLessThanBothWays, &ltF));
+        Function(stp::BVAND, "bit-vector and", &bvAndBothWays, &bvAndF));
     l.push_back(Function(stp::EQ, "equals", &bvEqualsBothWays, &eqF));
-    l.push_back(Function(stp::BVXOR, "bit-vector xor", &bvXorBothWays, &bvXOrF));
+    l.push_back(
+        Function(stp::BVXOR, "bit-vector xor", &bvXorBothWays, &bvXOrF));
     l.push_back(Function(stp::BVOR, "bit-vector or", &bvOrBothWays, &bvOrF));
-    l.push_back(Function(stp::BVAND, "bit-vector and", &bvAndBothWays, &bvAndF));
-    l.push_back(
-        Function(stp::BVRIGHTSHIFT, "right shift", &bvRightShiftBothWays, &rightSF));
-    l.push_back(
-        Function(stp::BVLEFTSHIFT, "left shift", &bvLeftShiftBothWays, &leftSF));
+    l.push_back(Function(stp::BVRIGHTSHIFT, "right shift",
+                         &bvRightShiftBothWays, &rightSF));
+    l.push_back(Function(stp::BVLEFTSHIFT, "left shift", &bvLeftShiftBothWays,
+                         &leftSF));
 
     l.push_back(Function(stp::BVPLUS, "addition", &bvAddBothWays, &plusF));
-    l.push_back(Function(stp::BVSUB, "subtraction", &bvSubtractBothWays, &subF));
+    l.push_back(
+        Function(stp::BVSUB, "subtraction", &bvSubtractBothWays, &subF));
+        */
     //l.push_back(Function(stp::BVMULT, "multiplication", &multiply, &multiplyF));
     //l.push_back(
-      //  Function(stp::BVDIV, "unsigned division", &unsignedDivide, &divideF));
+    //  Function(stp::BVDIV, "unsigned division", &unsignedDivide, &divideF));
     //l.push_back(Function(stp::BVMOD, "unsigned remainder", &unsignedModulus, &remF));
   }
 };

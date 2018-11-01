@@ -102,14 +102,42 @@ case $STP_CONFIG in
          pwd
          ls
     ;;
-    
+
+
+    STATIC_RISS)
+         pwd
+         ls
+
+         eval sudo apt-get install -y libboost-all-dev
+
+         pushd ${SOURCE_DIR}
+         rm -rf riss
+         git clone --depth 1 https://github.com/conp-solutions/riss.git
+         cd riss
+         mkdir -p build
+         cd build
+         cmake .. -DDRATPROOF=OFF -DCMAKE_BUILD_TYPE=Release
+         make riss-core riss-coprocessor-lib-static -j 2
+         popd
+
+         cmake ${COMMON_CMAKE_ARGS} \
+                   -DSTATICCOMPILE:BOOL=ON \
+                   -DNOCRYPTOMINISAT=ON \
+                   -DUSE_RISS=ON \
+                   -DRISS_DIR=${SOURCE_DIR}/riss/ \
+                   ${SOURCE_DIR}
+         pwd
+         ls
+    ;;
+
+
     *)
         echo "\"${STP_CONFIG}\" configuration not recognised"
         exit 1
 esac
 
 make -j2 VERBOSE=1
-make check
+ctest -V
 
 echo $(ldd ./stp_simple)
 echo $(ldd ./stp)

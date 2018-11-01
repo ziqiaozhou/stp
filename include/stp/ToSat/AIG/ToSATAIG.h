@@ -27,17 +27,17 @@ THE SOFTWARE.
 #include <cmath>
 
 #include "stp/AST/AST.h"
-#include "stp/Util/RunTimes.h"
+#include "stp/AbsRefineCounterExample/ArrayTransformer.h"
 #include "stp/STPManager/STPManager.h"
-#include "stp/ToSat/BitBlaster.h"
 #include "stp/ToSat/AIG/BBNodeManagerAIG.h"
 #include "stp/ToSat/AIG/ToCNFAIG.h"
-#include "stp/AbsRefineCounterExample/ArrayTransformer.h"
+#include "stp/ToSat/BitBlaster.h"
+#include "stp/Util/RunTimes.h"
 
 namespace stp
 {
 
-class ToSATAIG : public ToSATBase
+class DLL_PUBLIC ToSATAIG : public ToSATBase
 {
 private:
   ASTNodeToSATVar nodeToSATVar;
@@ -58,11 +58,8 @@ private:
   void mark_variables_as_frozen(SATSolver& satSolver);
 
   bool runSolver(SATSolver& satSolver);
-  void add_cnf_to_solver(SATSolver& satSolver, Cnf_Dat_t* cnfData);
-  Cnf_Dat_t* bitblast(const ASTNode& input, bool needAbsRef);
   void handle_cnf_options(Cnf_Dat_t* cnfData, bool needAbsRef);
-  void release_cnf_memory(Cnf_Dat_t* cnfData);
-
+ 
   int count;
   bool first;
 
@@ -74,9 +71,13 @@ private:
     first = true;
   }
 
-  static int cnf_calls;
+  static THREAD_LOCAL int cnf_calls;
 
 public:
+  void add_cnf_to_solver(SATSolver& satSolver, Cnf_Dat_t* cnfData);
+  Cnf_Dat_t* bitblast(const ASTNode& input, bool needAbsRef);
+  void release_cnf_memory(Cnf_Dat_t* cnfData);
+
   bool cbIsDestructed() { return cb == NULL; }
 
   ToSATAIG(STPMgr* bm, ArrayTransformer* at)

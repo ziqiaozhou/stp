@@ -26,7 +26,6 @@ if (Boost_FOUND)
     add_executable(stp
         main.cpp
         main_common.cpp
-        STPProgramGlobals.cpp
     )
 
     if (STATICCOMPILE)
@@ -44,6 +43,6 @@ if (Boost_FOUND)
     target_link_libraries(stp libstp)
     install(TARGETS stp
         EXPORT ${STP_EXPORT_NAME}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
     )
 endif()

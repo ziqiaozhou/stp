@@ -38,7 +38,13 @@ class Solver;
 
 namespace stp
 {
-class MinisatCore : public SATSolver
+#if defined(__GNUC__) || defined(__clang__)
+  class __attribute__((visibility("default"))) MinisatCore : public SATSolver
+#else
+  class MinisatCore : public SATSolver
+#endif
+
+
 {
   Minisat::Solver* s;
 
@@ -53,7 +59,7 @@ public:
 
   bool solve(bool& timeout_expired); // Search without assumptions.
 
-  bool propagateWithAssumptions(const stp::SATSolver::vec_literals & assumps);
+  bool propagateWithAssumptions(const stp::SATSolver::vec_literals& assumps);
 
   virtual void setMaxConflicts(int64_t max_confl);
 

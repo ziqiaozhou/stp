@@ -22,6 +22,7 @@ project(STP)
 cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_CXX_STANDARD 11)
+include(GNUInstallDirs)
 
 if(NOT (CMAKE_MAJOR_VERSION LESS 2))
     if(POLICY CMP0048)
@@ -33,8 +34,10 @@ endif()
 # Search paths for custom CMake modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
-set(CMAKE_INSTALL_LIBDIR lib CACHE STRING "Output directory for libraries")
-set(CMAKE_INSTALL_BINDIR bin CACHE STRING "Output directory for executables")
+# generate JSON file of compile commands -- useful for code extension
+set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
+
+set(INCLUDEDIR include CACHE STRING "Output directory for include headers")
 set(STP_TIMESTAMPS ON CACHE BOOL "Enable build with timestamps")
 
 # -----------------------------------------------------------------------------
@@ -137,6 +140,26 @@ if (STATICCOMPILE)
         endforeach()
     endif()
 else ()
+    # use, i.e. don't skip the full RPATH for the build tree
+    SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+    # when building, don't use the install RPATH already
+    # (but later on when installing)
+    SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+    SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_LIBDIR}")
+
+    # add the automatically determined parts of the RPATH
+    # which point to directories outside the build tree to the install RPATH
+    SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+
+    # the RPATH to be used when installing, but only if it's not a system directory
+    LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_LIBDIR}" isSystemDir)
+    IF("${isSystemDir}" STREQUAL "-1")
+        SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_LIBDIR}")
+    ENDIF("${isSystemDir}" STREQUAL "-1")
+
     if (APPLE)
       set(CMAKE_MACOSX_RPATH ON)
       set(CMAKE_INSTALL_RPATH "@loader_path/../lib")
@@ -185,7 +208,7 @@ if (NOT MSVC)
     #if(NOT ENABLE_TESTING AND ${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
         # almost working
-        # add_cxx_flag_if_supported("-fvisibility=hidden")
+        add_cxx_flag_if_supported("-fvisibility=hidden")
         set(CMAKE_EXE_LINKER_FLAGS " ${CMAKE_EXE_LINKER_FLAGS} -Wl,--discard-all -Wl,--build-id=sha1")
     endif()
     add_cxx_flag_if_supported("-Wpointer-arith")
@@ -209,6 +232,8 @@ option(COVERAGE "Build with coverage check" OFF)
 if (COVERAGE)
     add_cxx_flag("--coverage")
 endif()
+
+option(USE_THREAD_LOCAL "Use thread-local storage when available" ON)
 
 if(WIN32)
   set(FLEX_PATH_HINT "e:/cygwin/bin" CACHE STRING "Flex path hints, can be null if on your path")
@@ -308,6 +333,16 @@ if(NOT Boost_FOUND)
   message(STATUS "Only building executable with few command-line options because the boost program_options library were not available")
 endif()
 
+# -----------------------------------------------------------------------------
+# Find Riss
+# -----------------------------------------------------------------------------
+option(USE_RISS "Try to use Riss" OFF)
+
+if (USE_RISS)
+    add_definitions(-DUSE_RISS)
+    include_directories(${RISS_DIR}/)        # should point to the base directory: ~/git/riss/
+    link_directories(${RISS_DIR}/build/lib)  # should point to the base directory: ~/git/riss/build/lib
+endif()
 
 # -----------------------------------------------------------------------------
 # Find CryptoMiniSat
@@ -315,7 +350,7 @@ endif()
 option(NOCRYPTOMINISAT "Don't try to use cryptominisat" OFF)
 
 if (NOT NOCRYPTOMINISAT)
-  set(cryptominisat_DIR "" CACHE PATH "Path to directory containing cryptominisat5Config.cmake")
+  set(cryptominisat5_DIR "" CACHE PATH "Path to directory containing cryptominisat5Config.cmake")
   find_package(cryptominisat5 CONFIG)
   if (cryptominisat5_FOUND AND HAVE_FLAG_STD_CPP11 AND (NOT NOCRYPTOMINISAT))
     message(STATUS "Found CryptoMiniSat 5.x and C++11, allowing --cryptominisat5 option")
@@ -344,6 +379,37 @@ find_package(ZLIB)
 include_directories(${ZLIB_INCLUDE_DIR})
 include_directories(${minisat_SOURCE_DIR})
 
+# ----------
+# manpage
+# ----------
+if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    find_program(HELP2MAN_FOUND help2man)
+    if (HELP2MAN_FOUND)
+        if (NOT ONLY_SIMPLE)
+            ADD_CUSTOM_TARGET(man_stp
+                ALL
+                DEPENDS stp
+            )
+
+            ADD_CUSTOM_COMMAND(
+                TARGET man_stp
+                COMMAND help2man
+                ARGS  --name="Simple Theorem Prover SMT solver" --version-string=${STP_FULL_VERSION} --help-option="--help" $<TARGET_FILE:stp> -o ${CMAKE_CURRENT_BINARY_DIR}/stp.1
+            )
+
+            INSTALL(
+                FILES ${CMAKE_CURRENT_BINARY_DIR}/stp.1
+                DESTINATION ${CMAKE_INSTALL_PREFIX}/man/man1)
+            message(STATUS "Manpage will be created and installed")
+        endif()
+    else()
+        MESSAGE(STATUS "Cannot find help2man, not creating manpage")
+    endif()
+else()
+    MESSAGE(STATUS "Not on Linux, not creating manpage")
+endif()
+
+
 # -----------------------------------------------------------------------------
 # Find Minisat
 # -----------------------------------------------------------------------------
@@ -361,8 +427,40 @@ set(LIBS ${LIBS} ${MINISAT_LIBRARIES})
 # -----------------------------------------------------------------------------
 # Find Parser and Lexer generators
 # -----------------------------------------------------------------------------
+
+# On macOS, search Homebrew for keg-only versions of Bison and Flex. Xcode does
+# not provide new enough versions for us to use.
+if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
+    execute_process(
+        COMMAND brew --prefix bison 
+        RESULT_VARIABLE BREW_BISON
+        OUTPUT_VARIABLE BREW_BISON_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if (BREW_BISON EQUAL 0 AND EXISTS "${BREW_BISON_PREFIX}")
+        message(STATUS "Found Bison keg installed by Homebrew at ${BREW_BISON_PREFIX}")
+        set(BISON_EXECUTABLE "${BREW_BISON_PREFIX}/bin/bison")
+    endif()
+    
+    execute_process(
+        COMMAND brew --prefix flex 
+        RESULT_VARIABLE BREW_FLEX
+        OUTPUT_VARIABLE BREW_FLEX_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    if (BREW_FLEX EQUAL 0 AND EXISTS "${BREW_FLEX_PREFIX}")
+        message(STATUS "Found Flex keg installed by Homebrew at ${BREW_FLEX_PREFIX}")
+        set(FLEX_EXECUTABLE "${BREW_FLEX_PREFIX}/bin/flex")
+    endif()
+endif()
+
+
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
+
+if (BISON_VERSION VERSION_LESS "2.6")
+    message(FATAL_ERROR "STP requires Bison 2.6 or newer")
+endif()
 
 # -----------------------------------------------------------------------------
 # Query definitions
@@ -472,11 +570,12 @@ if(ENABLE_TESTING AND NOT PYTHON_EXECUTABLE)
 endif()
 
 if(ENABLE_TESTING)
+  enable_testing()
   message(STATUS "Testing is enabled")
   set(UNIT_TEST_EXE_SUFFIX "Tests" CACHE STRING "Suffix for Unit test executable")
-  add_custom_target(check
-    COMMENT "top level target to invoke all other tests"
-  )
+#   add_custom_target(check
+#     COMMENT "top level target to invoke all other tests"
+#   )
 
   add_subdirectory(tests)
 else()
@@ -528,7 +627,7 @@ set(STP_INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH
 
 # Create STPConfig file
 set(EXPORT_TYPE "installed")
-set(CONF_INCLUDE_DIRS "${CMAKE_INSTALL_PREFIX}/include")
+set(CONF_INCLUDE_DIRS "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
 configure_file(STPConfig.cmake.in
   "${PROJECT_BINARY_DIR}/${CMAKE_FILES_DIRECTORY}/${STP_CONFIG_FILENAME}" @ONLY
 )

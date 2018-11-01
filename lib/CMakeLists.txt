@@ -95,8 +95,7 @@ else()
 endif()
 
 # Set the public header so it will be installed
-set_target_properties(libstp
-    PROPERTIES
+set_target_properties(libstp PROPERTIES
     OUTPUT_NAME stp
     PUBLIC_HEADER "${PROJECT_SOURCE_DIR}/include/stp/c_interface.h"
     VERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
@@ -131,14 +130,25 @@ if (USE_CRYPTOMINISAT)
     endif()
 endif()
 
+if (USE_RISS)
+    if (STATICCOMPILE)
+        set(libstp_link_libs
+          ${libstp_link_libs} -lriss-coprocessor -lpthread)
+    else()
+      set(libstp_link_libs
+        ${libstp_link_libs}
+        -lriss -lcoprocessor)
+    endif()
+endif()
+
 target_link_libraries(libstp
     LINK_PUBLIC ${libstp_link_libs}
 )
 
 install(TARGETS libstp
     EXPORT ${STP_EXPORT_NAME}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    PUBLIC_HEADER DESTINATION include/stp
+    LIBRARY DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    ARCHIVE DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+    PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_FULL_INCLUDEDIR}/stp"
 )

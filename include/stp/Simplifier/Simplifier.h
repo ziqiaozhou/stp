@@ -25,15 +25,15 @@ THE SOFTWARE.
 #ifndef SIMPLIFIER_H
 #define SIMPLIFIER_H
 
-#include "stp/AST/AST.h"
-#include "stp/STPManager/STPManager.h"
-#include "stp/AST/NodeFactory/SimplifyingNodeFactory.h"
 #include "SubstitutionMap.h"
+#include "stp/AST/AST.h"
+#include "stp/AST/NodeFactory/SimplifyingNodeFactory.h"
+#include "stp/STPManager/STPManager.h"
 
 namespace stp
 {
-ASTNode NonMemberBVConstEvaluator(STPMgr* _bm, const ASTNode& t);
-ASTNode NonMemberBVConstEvaluator(STPMgr* _bm, const Kind k,
+DLL_PUBLIC ASTNode NonMemberBVConstEvaluator(STPMgr* _bm, const ASTNode& t);
+DLL_PUBLIC ASTNode NonMemberBVConstEvaluator(STPMgr* _bm, const Kind k,
                                   const ASTVec& input_children,
                                   unsigned int inputwidth);
 
@@ -128,8 +128,8 @@ public:
   bool UpdateSubstitutionMap(const ASTNode& e0, const ASTNode& e1);
   bool UpdateSubstitutionMapFewChecks(const ASTNode& e0, const ASTNode& e1);
 
-  ASTNode applySubstitutionMap(const ASTNode& n);
-  ASTNode applySubstitutionMapUntilArrays(const ASTNode& n);
+  DLL_PUBLIC ASTNode applySubstitutionMap(const ASTNode& n);
+  DLL_PUBLIC ASTNode applySubstitutionMapUntilArrays(const ASTNode& n);
 
   void ResetSimplifyMaps(void);
 
@@ -228,10 +228,7 @@ public:
     return substitutionMap.hasUnappliedSubstitutions();
   }
 
-  ASTNodeMap* Return_SolverMap()
-  {
-    return substitutionMap.Return_SolverMap();
-  }
+  ASTNodeMap* Return_SolverMap() { return substitutionMap.Return_SolverMap(); }
 
   void haveAppliedSubstitutionMap()
   {
@@ -263,7 +260,6 @@ public:
   {
     return substitutionMap.getVariablesInExpression();
   }
-
 };
 } // end of namespace
 #endif

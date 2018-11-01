@@ -21,16 +21,16 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ********************************************************************/
-#include <cmath>
-#include <cassert>
 #include "stp/ToSat/BitBlaster.h"
+#include "stp/AbsRefineCounterExample/ArrayTransformer.h"
+#include "stp/Simplifier/Simplifier.h"
+#include "stp/Simplifier/constantBitP/ConstantBitPropagation.h"
+#include "stp/Simplifier/constantBitP/FixedBits.h"
+#include "stp/Simplifier/constantBitP/NodeToFixedBitsMap.h"
 #include "stp/ToSat/AIG/BBNodeManagerAIG.h"
 #include "stp/ToSat/ASTNode/BBNodeManagerASTNode.h"
-#include "stp/Simplifier/constantBitP/FixedBits.h"
-#include "stp/Simplifier/constantBitP/ConstantBitPropagation.h"
-#include "stp/Simplifier/constantBitP/NodeToFixedBitsMap.h"
-#include "stp/Simplifier/Simplifier.h"
-#include "stp/AbsRefineCounterExample/ArrayTransformer.h"
+#include <cassert>
+#include <cmath>
 
 namespace stp
 {
@@ -80,7 +80,8 @@ public:
   size_t operator()(const vector<BBNode>& n) const
   {
     size_t hash = 0;
-    for (size_t i = 0; i < std::min(n.size(), (size_t)6); i++) {
+    for (size_t i = 0; i < std::min(n.size(), (size_t)6); i++)
+    {
       hash += n[i].GetNodeNum();
     }
     return hash;
@@ -219,10 +220,11 @@ void BitBlaster<BBNode, BBNodeManagerT>::getConsts(const ASTNode& form,
     }
   }
 
-  if (true)//(uf->isSet("bb-equiv", "1"))
+  if (true) //(uf->isSet("bb-equiv", "1"))
   {
-    typedef std::unordered_map<
-      vector<BBNode>, ASTNode, BBVecHasher<BBNode>, BBVecEquals<BBNode>> M;
+    typedef std::unordered_map<vector<BBNode>, ASTNode, BBVecHasher<BBNode>,
+                               BBVecEquals<BBNode>>
+        M;
     M lookup;
     typename std::map<ASTNode, vector<BBNode>>::iterator it;
     for (it = BBTermMemo.begin(); it != BBTermMemo.end(); it++)
@@ -367,17 +369,6 @@ void BitBlaster<BBNode, BBNodeManagerT>::updateTerm(const ASTNode& n,
 
   if (n.isConstant())
   {
-// This doesn't hold any longer because we convert BVSDIV and friends to
-// ASTNodes.
-#if 0
-        simplifier::constantBitP::NodeToFixedBitsMap::NodeToFixedBitsMapType::const_iterator it;
-        it = cb->fixedMap->map->find(n);
-        if (it == cb->fixedMap->map->end())
-          {
-          cerr << n;
-          assert(it != cb->fixedMap->map->end());
-          }assert(it->second->isTotallyFixed());
-#endif
     return;
   }
 
@@ -491,10 +482,9 @@ ASTNode BitBlaster<BBNode, BBNodeManagerT>::getConstant(const BBNodeVec& v,
 // Then the term that we bitblast will by "y".
 template <class BBNode, class BBNodeManagerT>
 typename std::map<ASTNode, vector<BBNode>>::iterator
-BitBlaster<BBNode, BBNodeManagerT>::simplify_during_bb(
-  ASTNode& term
-  , BBNodeSet& support
-) {
+BitBlaster<BBNode, BBNodeManagerT>::simplify_during_bb(ASTNode& term,
+                                                       BBNodeSet& support)
+{
   const int numberOfChildren = term.Degree();
   vector<BBNodeVec> ch;
   ch.reserve(numberOfChildren);
@@ -512,7 +502,8 @@ BitBlaster<BBNode, BBNodeManagerT>::simplify_during_bb(
       t.push_back(BBForm(term[i], support));
       ch.push_back(t);
     }
-    else {
+    else
+    {
       assert(false);
       exit(-1);
     }
@@ -636,7 +627,8 @@ const BBNodeVec BitBlaster<BBNode, BBNodeManagerT>::BBTerm(const ASTNode& _term,
   if (uf != NULL && uf->optimize_flag && uf->simplify_during_BB_flag)
   {
     auto it = simplify_during_bb(term, support);
-    if (it != BBTermMemo.end()) {
+    if (it != BBTermMemo.end())
+    {
       return it->second;
     }
   }
@@ -917,7 +909,6 @@ const BBNodeVec BitBlaster<BBNode, BBNodeManagerT>::BBTerm(const ASTNode& _term,
 
           BBNode eq = BBEQ(zero, dvsr);
           BBNodeVec max(term.GetValueWidth(), BBTrue);
-         
 
           result = BBITE(eq, max, q);
         }
@@ -1322,13 +1313,7 @@ BBNodeVec BitBlaster<BBNode, BBNodeManagerT>::BBAndBit(const BBNodeVec& y,
   return result;
 }
 
-typedef enum
-{
-  SYMBOL_MT,
-  ZERO_MT,
-  ONE_MT,
-  MINUS_ONE_MT
-} mult_type;
+typedef enum { SYMBOL_MT, ZERO_MT, ONE_MT, MINUS_ONE_MT } mult_type;
 
 void printP(mult_type* m, int width)
 {
@@ -1611,7 +1596,7 @@ BBNodeVec BitBlaster<BBNode, BBNodeManagerT>::multWithBounds(
 
 template <class BBNode, class BBNodeManagerT>
 void BitBlaster<BBNode, BBNodeManagerT>::mult_Booth(
-    const BBNodeVec& x_i, const BBNodeVec& y_i, BBNodeSet& support,
+    const BBNodeVec& x_i, const BBNodeVec& y_i, BBNodeSet& /*support*/,
     const ASTNode& xN, const ASTNode& yN, vector<list<BBNode>>& products,
     const ASTNode& n)
 {
@@ -1972,8 +1957,8 @@ BBNodeVec BitBlaster<BBNode, BBNodeManagerT>::BBMult(const BBNodeVec& _x,
                                                      const ASTNode& n)
 {
 
-//  if (uf->isSet("print_on_mult", "0"))
- //   cerr << "--mult--";
+  //  if (uf->isSet("print_on_mult", "0"))
+  //   cerr << "--mult--";
 
   BBNodeVec x = _x;
   BBNodeVec y = _y;
@@ -1988,8 +1973,8 @@ BBNodeVec BitBlaster<BBNode, BBNodeManagerT>::BBMult(const BBNodeVec& _x,
   assert(x.size() == bitWidth);
   assert(y.size() == bitWidth);
 
-  vector<list<BBNode>> products(
-      bitWidth + 1); // Create one extra to avoid special cases.
+  vector<list<BBNode>> products(bitWidth +
+                                1); // Create one extra to avoid special cases.
 
   if (multiplication_variant == "1")
   {
@@ -2307,7 +2292,8 @@ BBNodeVec BitBlaster<BBNode, BBNodeManagerT>::v9(vector<list<BBNode>>& products,
       }
     }
 
-    for (unsigned carry_column = column + 1; carry_column < bitWidth; carry_column++)
+    for (unsigned carry_column = column + 1; carry_column < bitWidth;
+         carry_column++)
     {
       if (toAdd[carry_column].size() == 0)
         continue;
@@ -2719,9 +2705,11 @@ BBNodeVec BitBlaster<BBNode, BBNodeManagerT>::BBITE(const BBNode& cond,
   return result;
 }
 
-//  smt-test/transitive400.smt2
-// Minisat 2:  bbbvle_variant = true. 8 ms
-// Minisat 2:  bbbvle_variant = false. 577 ms
+// SMTLIB as of Jan'18 with cryptominisat 
+// bbbvle_variant = true.   35,373/40,043 solved in 500 seconds
+// bbbvle_variant = false.  35,365/ ... 
+// true gives a smaller encoding, with comparible propration strength, 
+// it solves slightly more problems.
 
 // Workhorse for comparison routines.  This does a signed BVLE if is_signed
 // is true, else it's unsigned.  All other comparison operators can be reduced

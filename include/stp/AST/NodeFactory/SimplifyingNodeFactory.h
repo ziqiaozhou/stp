@@ -60,21 +60,20 @@ THE SOFTWARE.
 #include "stp/STPManager/STPManager.h"
 #include "stp/Util/Attributes.h"
 
-class SimplifyingNodeFactory : public NodeFactory
+class DLL_PUBLIC SimplifyingNodeFactory : public NodeFactory
 {
 
 public:
-  DLL_PUBLIC virtual ASTNode CreateNode(Kind kind,
-                                   const ASTVec& children);
-  DLL_PUBLIC virtual ASTNode CreateTerm(Kind kind, unsigned int width,
-                                   const ASTVec& children);
+  virtual ASTNode CreateNode(Kind kind, const ASTVec& children);
+  virtual ASTNode CreateTerm(Kind kind, unsigned int width,
+                                        const ASTVec& children);
 
-  DLL_PUBLIC virtual std::string getName() { return "simplifying"; }
+  virtual std::string getName() { return "simplifying"; }
 
-  DLL_PUBLIC SimplifyingNodeFactory(NodeFactory& raw_, STPMgr& bm_)
+  SimplifyingNodeFactory(NodeFactory& raw_, STPMgr& bm_)
       : NodeFactory(bm_), hashing(raw_), ASTTrue(bm_.ASTTrue),
         ASTFalse(bm_.ASTFalse), ASTUndefined(bm_.ASTUndefined){};
-  DLL_PUBLIC ~SimplifyingNodeFactory() {}
+  ~SimplifyingNodeFactory() {}
 
 private:
   SimplifyingNodeFactory(const SimplifyingNodeFactory&);
@@ -90,8 +89,7 @@ private:
   ASTNode CreateSimpleAndOr(bool IsAnd, const ASTVec& children);
   ASTNode CreateSimpleAndOr(bool IsAnd, const ASTNode& form1,
                             const ASTNode& form2);
-  ASTNode handle_2_children(bool IsAnd,
-                                     const ASTVec& children);
+  ASTNode handle_2_children(bool IsAnd, const ASTVec& children);
 
   ASTNode CreateSimpleNot(const ASTNode& form);
   ASTNode CreateSimpleNot(const ASTVec& children);
@@ -108,12 +106,8 @@ private:
   bool children_all_constants(const ASTVec& children) const;
   ASTNode get_smallest_number(const unsigned width);
   ASTNode get_largest_number(const unsigned width);
-  void handle_bvand(
-    Kind kind,
-    unsigned int width,
-    const ASTVec& children,
-    ASTNode& result
-  );
+  void handle_bvand(Kind kind, unsigned int width, const ASTVec& children,
+                    ASTNode& result);
   ASTNode create_gt_node(const ASTVec& children);
 };
 

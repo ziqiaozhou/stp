@@ -25,20 +25,18 @@ THE SOFTWARE.
 #ifndef __MAIN_COMMON_H__
 #define __MAIN_COMMON_H__
 
-#include <stdio.h>
-#include "STPProgramGlobals.h"
 #include "stp/AST/AST.h"
+#include "stp/AST/NodeFactory/TypeChecker.h"
 #include "stp/Printer/AssortedPrinters.h"
 #include "stp/Printer/printers.h"
-#include "stp/STPManager/STPManager.h"
 #include "stp/STPManager/STP.h"
-#include "stp/AST/NodeFactory/TypeChecker.h"
-#include "stp/cpp_interface.h"
-#include <sys/time.h>
-#include <memory>
-#include <string>
-#include <stdio.h>
+#include "stp/STPManager/STPManager.h"
 #include "stp/Util/GitSHA1.h"
+#include "stp/cpp_interface.h"
+#include <memory>
+#include <stdio.h>
+#include <string>
+#include <sys/time.h>
 
 class Main
 {
