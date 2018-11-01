@@ -154,6 +154,7 @@ void ExtraMain::create_options()
   po::options_description simplification_options("Simplifications");
   simplification_options.add_options() 
     ("disable-simplifications", "disable all simplifications")
+    ("disable-countsimplifications", "disable all simplifications")
     ("switch-word,w", "switch off wordlevel solver")
     ("disable-opt-inc,a", "disable potentially size-increasing optimisations")
     ("disable-cbitp", "disable constant bit propagation")
@@ -342,12 +343,17 @@ int ExtraMain::parse_options(int argc, char** argv)
 
   if (vm.count("disable-simplifications"))
   {
+	  std::cout<<"disable-simplifications";
     bm->UserFlags.disableSimplifications();
+  }
+  if (vm.count("disable-countsimplifications"))
+  {
+	  bm->UserFlags.disableCountSimplifications();
   }
 
   if (vm.count("disable-equality"))
   {
-    bm->UserFlags.propagate_equalities = false;
+	  bm->UserFlags.propagate_equalities = false;
   }
 
   if (vm.count("timeout"))

@@ -161,6 +161,19 @@ public:
     wordlevel_solve_flag = false;
     propagate_equalities = false;
   }
+ void disableCountSimplifications()
+  {
+    optimize_flag = false;
+enable_unconstrained= false;
+    bitConstantProp_flag = false;
+    enable_use_intervals = false;
+    enable_pure_literals = false;
+    enable_always_true = false;
+    enable_bitblast_simplification =false;
+    wordlevel_solve_flag = false;
+    propagate_equalities = false;
+  }
+
 
   UserDefinedFlags()
   {
