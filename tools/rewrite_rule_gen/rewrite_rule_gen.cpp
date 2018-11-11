@@ -263,7 +263,7 @@ ASTNode eval(const ASTNode& n, ASTNodeMap& map, int count = 0)
 
   if (n.Degree() == 0)
   {
-    cerr << n;
+    std::cerr << n;
     assert(false);
   }
 
@@ -715,7 +715,7 @@ ASTNode get(ASTNode a, int i, int pos)
   if ((v & 0) == 0)
     return mgr->CreateNode(NOT, a);
 
-  cerr << "FAILED";
+  std::cerr << "FAILED";
   exit(1);
 }
 
@@ -864,7 +864,7 @@ uint64_t getHash(const ASTNode& n_, const vector<VariableAssignment>& values)
         mapToVal.insert(make_pair(symbols[j], values[i].getW()));
       else
       {
-        cerr << "Unknown symbol!" << symbols[j];
+        std::cerr << "Unknown symbol!" << symbols[j];
         FatalError("f");
       }
     }
@@ -1442,8 +1442,8 @@ string createString(ASTNode n, std::map<ASTNode, string>& val)
   }
   else
   {
-    cerr << n;
-    cerr << "never here";
+    std::cerr << n;
+    std::cerr << "never here";
     exit(1);
   }
 
@@ -1705,26 +1705,26 @@ ASTNode rewrite(const ASTNode& n, const Rewrite_rule& original_rule,
     {
       if (debug_usr2)
       {
-        cerr << "Original Rule";
+        std::cerr << "Original Rule";
 
-        cerr << original_rule.getFrom();
-        cerr << "->" << original_rule.getTo();
+        std::cerr << original_rule.getFrom();
+        std::cerr << "->" << original_rule.getTo();
 
-        cerr << "Matching Rule";
-        cerr << rr[i].getFrom();
-        cerr << "->" << rr[i].getTo();
+        std::cerr << "Matching Rule";
+        std::cerr << rr[i].getFrom();
+        std::cerr << "->" << rr[i].getTo();
 
-        cerr << "--------------";
-        cerr << "Unifying" << f;
-        cerr << "with:" << n2;
-        cerr << "--------------";
+        std::cerr << "--------------";
+        std::cerr << "Unifying" << f;
+        std::cerr << "with:" << n2;
+        std::cerr << "--------------";
 
         for (ASTNodeMap::iterator it = fromTo.begin(); it != fromTo.end(); it++)
         {
-          cerr << it->first << "to" << it->second << endl;
+          std::cerr << it->first << "to" << it->second << endl;
         }
 
-        cerr << "--------------";
+        std::cerr << "--------------";
       }
 
       // The substitution map replace should never infinite loop.
@@ -1739,11 +1739,11 @@ ASTNode rewrite(const ASTNode& n, const Rewrite_rule& original_rule,
 
       if (debug_usr2 && (getDifficulty(n2) < getDifficulty(r)))
       {
-        cerr << rr[i].getFrom() << rr[i].getTo();
-        cerr << getDifficulty(rr[i].getFrom()) << "to"
+        std::cerr << rr[i].getFrom() << rr[i].getTo();
+        std::cerr << getDifficulty(rr[i].getFrom()) << "to"
              << getDifficulty(rr[i].getTo()) << "\n";
-        cerr << n2 << r;
-        cerr << getDifficulty(n2) << "to" << getDifficulty(r);
+        std::cerr << n2 << r;
+        std::cerr << getDifficulty(n2) << "to" << getDifficulty(r);
         assert(getDifficulty(n2) >= getDifficulty(r));
       }
 
@@ -1751,8 +1751,8 @@ ASTNode rewrite(const ASTNode& n, const Rewrite_rule& original_rule,
 
       if (debug_usr2)
       {
-        cerr << "Term after replacing (1/2) :";
-        cerr << n2 << ":" << r;
+        std::cerr << "Term after replacing (1/2) :";
+        std::cerr << n2 << ":" << r;
       }
 
       r = rewrite(r, original_rule, seen, depth + 1);
@@ -1760,8 +1760,8 @@ ASTNode rewrite(const ASTNode& n, const Rewrite_rule& original_rule,
       seen.insert(make_pair(n2, r));
       if (debug_usr2)
       {
-        cerr << "inserting (2/2)" << n2 << r;
-        cerr << "+++++++!!!!!!!!!!++++++++";
+        std::cerr << "inserting (2/2)" << n2 << r;
+        std::cerr << "+++++++!!!!!!!!!!++++++++";
       }
 
       return r;
@@ -1838,7 +1838,7 @@ void load_new_rules(const string fileName = "rules_new.smt2")
                         &id, &verified_to_bits, &time_used, &from_v, &to_v);
         if (rv != 5)
         {
-          cerr << line;
+          std::cerr << line;
           done = true;
           break;
         }
@@ -1953,7 +1953,7 @@ void t2()
   ASTNodeMap seen;
   createVariables();
   ASTNode r = rename_then_rewrite(n, Rewrite_rule::getNullRule());
-  cerr << r;
+  std::cerr << r;
   GlobalParserInterface = NULL;
 }
 
@@ -2179,7 +2179,7 @@ int main(int argc, const char* argv[])
           fin.getline(line,256);
           int id;
           sscanf(line,"FAILED:%d",&id);
-          //cerr << "Failed id: " << id << endl;
+          //std::cerr << "Failed id: " << id << endl;
           rewrite_system.deleteID(id);
         }
       createVariables();
@@ -2331,19 +2331,19 @@ bool c_matchNode(const ASTNode& n0, const ASTNode& n1,
 
   if (debug_matching)
   {
-    cerr << "======Commut-match=======" << r << endl;
-    cerr << "given" << n0 << n1;
-    cerr << "Commutative still to match:" << endl;
+    std::cerr << "======Commut-match=======" << r << endl;
+    std::cerr << "given" << n0 << n1;
+    std::cerr << "Commutative still to match:" << endl;
     for (size_t j = 0; j < commutative_to_check.size(); j++)
     {
-      cerr << "++++++++++" << endl;
-      cerr << "first" << commutative_to_check[j].first;
-      cerr << "second" << commutative_to_check[j].second;
+      std::cerr << "++++++++++" << endl;
+      std::cerr << "first" << commutative_to_check[j].first;
+      std::cerr << "second" << commutative_to_check[j].second;
     }
-    cerr << "From To Map is:" << endl;
-    cerr << "vNode" << vNode;
-    cerr << "wNode" << wNode;
-    cerr << "=============";
+    std::cerr << "From To Map is:" << endl;
+    std::cerr << "vNode" << vNode;
+    std::cerr << "wNode" << wNode;
+    std::cerr << "=============";
   }
 
   if (!r)
@@ -2368,7 +2368,7 @@ bool c_matchNode(const ASTNode& n0, const ASTNode& n1,
 
   if (f.size() != s.size())
   {
-    cerr << "different sized!!!";
+    std::cerr << "different sized!!!";
     // If it's bad we restore it all back.
     if (commutative_to_check.size() < init_comm_size)
       commutative_to_check.push_back(p);
@@ -2522,7 +2522,7 @@ bool commutative_matchNode(const ASTNode& n0, const ASTNode& n1,
 
   if (debug_matching)
   {
-    cerr << "=======" << endl
+    std::cerr << "=======" << endl
          << "The result is: " << r << "for the inputs" << n0 << n1 << "=-===";
   }
 

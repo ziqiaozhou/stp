@@ -83,6 +83,9 @@ void vc_setInterfaceFlags(VC vc, enum ifaceflag_t f, int param_value)
       //Array-based Minisat has been replaced with normal MiniSat
       b->UserFlags.solver_to_use = stp::UserDefinedFlags::MINISAT_SOLVER;
       break;
+	case output_CNF_flag:
+	  b->UserFlags.output_CNF_flag=param_value>0;
+	  break;
     default:
       stp::FatalError("C_interface: vc_setInterfaceFlags: Unrecognized flag\n");
       break;

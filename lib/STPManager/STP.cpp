@@ -48,6 +48,7 @@ THE SOFTWARE.
 #include "stp/Simplifier/UnsignedIntervalAnalysis.h"
 #include "stp/Simplifier/UseITEContext.h"
 #include <memory>
+#include <fstream> 
 using std::cout;
 
 namespace stp
@@ -120,12 +121,22 @@ SOLVER_RETURN_TYPE STP::TopLevelSTP(const ASTNode& inputasserts,
                                     const ASTNode& query)
 {
 
-  // Unfortunatey this is a global variable,which the aux function needs to
-  // overwrite sometimes.
-  bool saved_ack = bm->UserFlags.ackermannisation;
-
-  ASTNode original_input;
-  if (query != bm->ASTFalse)
+	// Unfortunatey this is a global variable,which the aux function needs to
+	// overwrite sometimes.
+	bool saved_ack = bm->UserFlags.ackermannisation;
+	std::ofstream ofs;
+	ofs.open ("/playpen/ziqiao/log.txt", std::ofstream::out | std::ofstream::app);
+	if (bm->UserFlags.output_CNF_flag){
+		bm->UserFlags.exit_after_CNF=false;
+		ofs<<"disable simpl";
+		bm->UserFlags.ackermannisation=true;
+		bm->UserFlags.disableSimplifications(); 
+	}else{
+		ofs<<" not disable simpl";
+	}
+	ofs.close();
+	ASTNode original_input;
+	if (query != bm->ASTFalse)
   {
     original_input =
         bm->CreateNode(AND, inputasserts, bm->CreateNode(NOT, query));

@@ -286,7 +286,7 @@ public:
 
   void verifyAllwithSAT()
   {
-    cerr << "Started verifying all" << endl;
+	  std::cerr << "Started verifying all" << endl;
     for (RewriteRuleContainer::iterator it = toWrite.begin();
          it != toWrite.end(); it++)
     {

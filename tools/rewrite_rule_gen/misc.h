@@ -26,7 +26,7 @@ THE SOFTWARE.
 #define MISC_H
 
 #include "stp/AST/AST.h"
-
+#include "VariableAssignment.h"
 extern const int bits;
 extern const int widen_to;
 

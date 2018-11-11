@@ -169,7 +169,9 @@ enum ifaceflag_t
   //!
   //! Currently simply forwards to MS.
   //!
-  MSP
+  MSP,
+  // outputr CNF 
+  output_CNF_flag
 
 };
 

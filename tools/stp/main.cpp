@@ -151,22 +151,13 @@ void ExtraMain::create_options()
       "version", "print version number");
 
   po::options_description simplification_options("Simplifications");
-<<<<<<< HEAD
-  simplification_options.add_options() 
-    ("disable-simplifications", "disable all simplifications")
-    ("disable-countsimplifications", "disable all simplifications")
-    ("switch-word,w", "switch off wordlevel solver")
-    ("disable-opt-inc,a", "disable potentially size-increasing optimisations")
-    ("disable-cbitp", "disable constant bit propagation")
-    ("disable-equality", "disable equality propagation");
-=======
+
   simplification_options.add_options()("disable-simplifications",
                                        "disable all simplifications")(
       "switch-word,w", "switch off wordlevel solver")(
       "disable-opt-inc,a", "disable potentially size-increasing optimisations")(
       "disable-cbitp", "disable constant bit propagation")(
       "disable-equality", "disable equality propagation");
->>>>>>> 80742b4858e695e741a30f6d4111ee63e6917e9c
 
   po::options_description solver_options("SAT Solver options");
   solver_options.add_options()

@@ -119,6 +119,7 @@ bool ToSAT::toSATandSolve(SATSolver& newSolver, ClauseList& cll, bool final,
   if (bm->UserFlags.output_CNF_flag && true)
   {
     dump_to_cnf_file(newSolver, cll, &cc);
+	return true;
   }
 
   bool ret = fill_satsolver_with_clauses(cc, newSolver);
